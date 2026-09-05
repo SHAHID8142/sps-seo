@@ -30,7 +30,14 @@
   - **Schema & AI Search (AEO):** 25 pts
 - Baseline audit must be run before modifications; verification audit must be run after modifications.
 
-### Law 5: Dual Memory Synchronization
+### Law 5: Internal Link Architecture & Zero Orphans
+- Every indexable page must have at least one incoming contextual internal link (`scripts/internal-links.mjs`).
+- Never use generic anchor texts ("click here", "read more"); use descriptive, keyword-aligned anchor text.
+
+### Law 6: No Internal Keyword Cannibalization
+- Verify that multiple routes are not competing for the exact same target keywords or using duplicate `<title>`/`<meta description>` tags (`scripts/cannibalization.mjs`).
+
+### Law 7: Dual Memory Synchronization
 - Store project SEO variables in `sps-seo-config.json`.
 - If an SPS ecosystem directory (`./.sps/`) is present, run `node scripts/sync-config.mjs` to maintain bidirectional synchronization with `./.sps/seo.json`.
 
@@ -41,19 +48,20 @@
 ```mermaid
 flowchart TD
     A[Start: /sps-seo] --> B[Phase 1: Discovery & Audit]
-    B --> C[Fetch Real-Time Search Trends]
-    C --> D[Run scripts/audit.mjs - Baseline Score 0-100]
-    D --> E[User Approval Gate]
-    E --> F[Phase 2: Automated On-Page Execution]
-    F --> G[Detect Framework Adapter]
-    G --> H[Inject Meta, Canonical, OG & Twitter]
-    H --> I[Inject Schema.org JSON-LD Templates]
-    I --> J[Fix H1-H6 Hierarchy & Image Alts]
-    J --> K[Generate sitemap.xml, robots.txt, llms.txt]
-    K --> L[Run Verification Audit: Target >= 90/100]
-    L --> M[Phase 3: External SEO Guidance]
-    M --> N[GSC Setup, Domain Verification, Sitemap Submission, Backlink Outreach]
-    N --> O[Done & Certified]
+    B --> C[npm run init - Wizard Setup]
+    C --> D[Fetch Real-Time Search Trends]
+    D --> E[Run scripts/audit.mjs - Baseline Score 0-100]
+    E --> F[Run links & cannibalization checks]
+    F --> G[Phase 2: Automated On-Page Execution]
+    G --> H[npm run fix - Automated Scaffolding]
+    H --> I[Surgical Injections: Meta, Canonical, OG, Schemas]
+    I --> J[npm run validate-schema & npm run og]
+    J --> K[Run Verification Audit: Score >= 90/100]
+    K --> L[Phase 3: External SEO Guidance]
+    L --> M[npm run ping-indexnow - Direct API Ping]
+    M --> N[GSC Setup, DNS TXT, Sitemap Submission, Backlinks]
+    N --> O[Deploy GitHub Actions CI Quality Gate]
+    O --> P[Done & Certified]
 ```
 
 ---
@@ -64,6 +72,9 @@ A project is only certified "SPS SEO Compliant" when:
 1. Deterministic score in `scripts/audit.mjs` reaches **>= 90/100 (Grade A)**.
 2. Exactly one `<h1>` per page with zero skipped heading levels.
 3. 100% of images in primary content templates have descriptive `alt` tags.
-4. Valid Schema.org JSON-LD script is embedded and passes syntax checks.
-5. Valid `sitemap.xml`, `robots.txt`, and `llms.txt` are generated.
-6. `sps-seo-audit-report.md` (and `.sps/seo-audit.md` if applicable) is updated.
+4. Valid Schema.org JSON-LD scripts pass `scripts/validate-schema.mjs` without errors.
+5. Internal linking graph has zero orphan pages (`scripts/internal-links.mjs`).
+6. Zero duplicate titles or keyword cannibalization detected (`scripts/cannibalization.mjs`).
+7. Valid `sitemap.xml`, `robots.txt`, and `llms.txt` are generated.
+8. Branded `og-image.svg` is generated.
+9. `sps-seo-audit-report.md` (and `.sps/seo-audit.md` if applicable) is updated.

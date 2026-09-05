@@ -1,0 +1,55 @@
+name: SPS SEO Quality Gate
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  seo-audit:
+    name: Technical SEO & AEO Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run SPS SEO Deterministic Audit
+        id: audit
+        run: |
+          node scripts/audit.mjs --json > audit-result.json
+          SCORE=$(node -e "const r = JSON.parse(require('fs').readFileSync('audit-result.json', 'utf8')); console.log(r.score);")
+          GRADE=$(node -e "const r = JSON.parse(require('fs').readFileSync('audit-result.json', 'utf8')); console.log(r.grade);")
+          echo "AUDIT_SCORE=$SCORE" >> $GITHUB_ENV
+          echo "AUDIT_GRADE=$GRADE" >> $GITHUB_ENV
+          echo "Deterministic SEO Score: $SCORE/100 (Grade: $GRADE)"
+
+      - name: Run Schema Validator
+        run: |
+          node scripts/validate-schema.mjs
+
+      - name: Run Internal Linking Graph Check
+        run: |
+          node scripts/internal-links.mjs
+
+      - name: Enforce SEO Quality Gate (Score >= 90)
+        run: |
+          if [ "$AUDIT_SCORE" -lt 90 ]; then
+            echo "❌ SEO Quality Gate FAILED: Score $AUDIT_SCORE/100 is below the required 90/100 threshold."
+            echo "Please review sps-seo-audit-report.md and run 'npm run fix' or update missing metadata/headings."
+            exit 1
+          fi
+          echo "✅ SEO Quality Gate PASSED: Score $AUDIT_SCORE/100 (Grade $AUDIT_GRADE)"
+
+      - name: Upload SEO Audit Report Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sps-seo-audit-report
+          path: sps-seo-audit-report.md

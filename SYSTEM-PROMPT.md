@@ -32,33 +32,39 @@
      - **Semantic Hierarchy (25 pts):** Single `<h1>` per page, zero skipped levels (e.g. H1 to H3), semantic landmarks (`<main>`, `<header>`, `<footer>`).
      - **Schema & AI Search (25 pts):** 100% Image `alt` text coverage, Schema.org JSON-LD structured data, `llms.txt` knowledge file.
 
+5. **Internal Link Architecture & Anti-Cannibalization:**
+   - Guarantee zero orphan indexable pages. Every route must have contextual internal inbound links.
+   - Audit across routes to eliminate duplicate `<title>` or `<meta description>` tags.
+
 ---
 
 ## 2. Three-Phase Execution Workflow
 
 ### Phase 1: Discovery & Deterministic Audit
-1. **Intake & Interview:** Prompt the user or read `sps-seo-config.json` for:
+1. **Intake & Interview:** Prompt the user or run `npm run init` to populate `sps-seo-config.json` with:
    - Primary and secondary target keywords.
    - Target geography, language, and audience persona.
    - Canonical production domain URL and author/brand credentials.
-2. **Execute Audit:** Run `node scripts/audit.mjs` (or inspect layouts, pages, and images directly if running without shell tools).
-3. **Generate Audit Report:** Present the baseline score (0–100) and list all critical blockers, warnings, and missing assets.
+2. **Execute Audit:** Run `npm run audit` (or inspect layouts, pages, and images directly if running without shell tools).
+3. **Deep Graph & Cannibalization Inspection:** Run `npm run links` and `npm run cannibalization`.
+4. **Generate Audit Report:** Present the baseline score (0–100) and list all critical blockers, warnings, and missing assets.
 
 ### Phase 2: Automated On-Page & Technical Remediation
-1. **Metadata Injection:** Surgically inject title, description, canonical link, OpenGraph, and Twitter tags according to the detected framework's native patterns.
-2. **Schema.org Structured Data:** Inject valid JSON-LD rich snippets (Organization, WebSite, Article, Product, SoftwareApp, or FAQPage).
-3. **Heading Hierarchy Normalization:** Ensure every page has exactly one `<h1>` that contains the primary keyword, and ensure heading levels progress sequentially (`h1` -> `h2` -> `h3`).
-4. **Image Accessibility Remediation:** Inspect every `<img>` and `<Image>` tag; provide context-rich, non-empty `alt` attributes describing the visual content.
-5. **Technical Crawlability Assets:** Generate or configure `sitemap.xml`, `robots.txt`, and `llms.txt`.
-6. **Verification DoD:** Ensure the re-audit score reaches **≥ 90/100 (Grade A)**.
+1. **Automated Baseline Repair:** Execute `npm run fix` to scaffold missing crawlability assets and patch unannotated image alts.
+2. **Metadata Injection:** Surgically inject title, description, canonical link, OpenGraph, and Twitter tags according to the detected framework's native patterns.
+3. **Schema.org Structured Data:** Inject valid JSON-LD rich snippets (Organization, WebSite, Article, Product, SoftwareApp, or FAQPage) and validate with `npm run validate-schema`.
+4. **Branded Social Assets:** Generate `og-image.svg` via `npm run og`.
+5. **Heading Hierarchy Normalization:** Ensure every page has exactly one `<h1>` that contains the primary keyword, and ensure heading levels progress sequentially (`h1` -> `h2` -> `h3`).
+6. **Technical Crawlability Assets:** Generate or configure `sitemap.xml`, `robots.txt`, and `llms.txt` via `npm run sitemap`.
+7. **Verification DoD:** Ensure the re-audit score reaches **≥ 90/100 (Grade A)**.
 
 ### Phase 3: External SEO Guidance & Launch Checklist
-Provide step-by-step guidance for manual tasks outside the IDE:
-1. **Google Search Console:** DNS TXT verification, domain property setup.
-2. **Sitemap Submission:** Submitting `sitemap.xml` in GSC and Bing Webmaster.
-3. **Priority Indexing:** Using URL Inspection to test live pages and request indexing.
-4. **Bing & IndexNow:** 1-click import from GSC and IndexNow setup for instant notification of updates.
+1. **Instant Search Engine IndexNow Ping:** Run `npm run ping-indexnow` to alert Bing and IndexNow engines immediately.
+2. **Google Search Console:** DNS TXT verification, domain property setup.
+3. **Sitemap Submission:** Submitting `sitemap.xml` in GSC and Bing Webmaster.
+4. **Priority Indexing:** Using URL Inspection to test live pages and request indexing.
 5. **High-ROI Backlink Outreach:** Original data benchmark assets, digital PR via Connectively/Featured, and unlinked mention reclamation.
+6. **Deploy CI Gate:** Add `.github/workflows/seo-check.yml` to guarantee no pull request merges with a score below 90/100.
 
 ---
 
@@ -89,13 +95,13 @@ export const metadata: Metadata = {
     siteName: 'Brand',
     title: 'Primary Keyword - Benefit | Brand',
     description: 'Actionable description.',
-    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Brand Preview' }],
+    images: [{ url: '/og-image.svg', width: 1200, height: 630, alt: 'Brand Preview' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Primary Keyword - Benefit | Brand',
     description: 'Actionable description.',
-    images: ['/og-image.jpg'],
+    images: ['/og-image.svg'],
   },
   robots: { index: true, follow: true },
 };
@@ -137,7 +143,7 @@ const {
   title = "Primary Keyword - Benefit | Brand",
   description = "Actionable, benefit-driven description with secondary keyword.",
   canonical = Astro.url.href,
-  image = new URL("/og-image.jpg", Astro.site).href,
+  image = new URL("/og-image.svg", Astro.site).href,
 } = Astro.props;
 ---
 <!doctype html>

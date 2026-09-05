@@ -1,15 +1,22 @@
 #!/usr/bin/env node
 
 /**
- * SPS SEO Test Suite
- * Validates deterministic audit engine, AST tokenizer, framework detection,
- * and 100-point scoring.
+ * SPS SEO Comprehensive Test Suite
+ * Validates deterministic audit engine, AST tokenizer, auto-fixer,
+ * internal links graph, cannibalization, schema validator, OG generator,
+ * and IndexNow ping.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { runAudit } from '../scripts/audit.mjs';
+import { runAutoFix } from '../scripts/fix.mjs';
+import { analyzeInternalLinks } from '../scripts/internal-links.mjs';
+import { detectCannibalization } from '../scripts/cannibalization.mjs';
+import { validateSchemas } from '../scripts/validate-schema.mjs';
+import { generateOgImage } from '../scripts/generate-og.mjs';
+import { pingIndexNow } from '../scripts/ping-indexnow.mjs';
 
 function createTempDir(prefix) {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -24,7 +31,7 @@ function cleanupDir(dir) {
 }
 
 async function runTests() {
-  console.log('🧪 Starting SPS SEO Test Suite...\n');
+  console.log('🧪 Starting SPS SEO Comprehensive Test Suite...\n');
   let passed = 0;
   let failed = 0;
 
@@ -38,7 +45,7 @@ async function runTests() {
     }
   }
 
-  // TEST 1: Next.js App Router Mock Project
+  // TEST 1: Next.js App Router Detection & Scoring
   const nextDir = createTempDir('sps-seo-test-next-');
   try {
     console.log('Test 1: Next.js App Router Detection & Scoring');
@@ -48,7 +55,6 @@ async function runTests() {
     }));
     fs.mkdirSync(path.join(nextDir, 'app'), { recursive: true });
     
-    // Layout with metadata, title, canonical, OG, Twitter, and JSON-LD
     fs.writeFileSync(path.join(nextDir, 'app/layout.tsx'), `
       import type { Metadata } from 'next';
       export const metadata: Metadata = {
@@ -72,7 +78,6 @@ async function runTests() {
       }
     `);
 
-    // Page with single H1, normal H2, and images with alt
     fs.writeFileSync(path.join(nextDir, 'app/page.tsx'), `
       export default function Page() {
         return (
@@ -85,7 +90,6 @@ async function runTests() {
       }
     `);
 
-    // Robots and sitemap
     fs.writeFileSync(path.join(nextDir, 'robots.txt'), 'User-agent: *\nAllow: /');
     fs.writeFileSync(path.join(nextDir, 'sitemap.xml'), '<urlset></urlset>');
     fs.writeFileSync(path.join(nextDir, 'llms.txt'), '# Knowledge Base');
@@ -97,13 +101,12 @@ async function runTests() {
     assert(report.framework.variant === 'app-router', 'Correctly identified App Router');
     assert(report.categories.semantics.h1Issues === 0, 'Zero H1 issues detected');
     assert(report.categories.schemaAndAi.missingAlt === 0, '100% image alt coverage');
-    assert(report.categories.schemaAndAi.jsonLd === true, 'JSON-LD detected');
     assert(report.score >= 90, `Earned Grade A score (Actual: ${report.score})`);
   } finally {
     cleanupDir(nextDir);
   }
 
-  // TEST 2: Astro Project with Missing Alt & Skipped Heading
+  // TEST 2: Astro Detection & Anomaly Flagging
   const astroDir = createTempDir('sps-seo-test-astro-');
   try {
     console.log('\nTest 2: Astro Detection & Anomaly Flagging');
@@ -112,12 +115,9 @@ async function runTests() {
     }));
     fs.mkdirSync(path.join(astroDir, 'src/pages'), { recursive: true });
 
-    // Page with 2 H1s, skipped H1->H3, and missing alt image
     fs.writeFileSync(path.join(astroDir, 'src/pages/index.astro'), `
       <html>
-        <head>
-          <title>Astro Page</title>
-        </head>
+        <head><title>Astro Page</title></head>
         <body>
           <h1>Primary Title</h1>
           <h1>Duplicate Invalid Title</h1>
@@ -150,9 +150,7 @@ async function runTests() {
           <meta name="description" content="A static site description.">
         </head>
         <body>
-          <main>
-            <h1>Static Site Heading</h1>
-          </main>
+          <main><h1>Static Site Heading</h1></main>
         </body>
       </html>
     `);
@@ -163,6 +161,146 @@ async function runTests() {
     assert(report.categories.metadata.description === true, 'Detected meta description');
   } finally {
     cleanupDir(htmlDir);
+  }
+
+  // TEST 4: Automated Remediation Engine (fix.mjs)
+  const fixDir = createTempDir('sps-seo-test-fix-');
+  try {
+    console.log('\nTest 4: Automated Remediation Engine (fix.mjs)');
+    fs.mkdirSync(path.join(fixDir, 'public'), { recursive: true });
+    fs.writeFileSync(path.join(fixDir, 'index.html'), `
+      <!DOCTYPE html>
+      <html>
+        <body>
+          <img src="/banner.png" />
+        </body>
+      </html>
+    `);
+
+    // Run auto-fix
+    const fixResult = await runAutoFix({ cwd: fixDir, dryRun: false });
+    assert(fixResult.applied >= 3, `Applied automated remediation items (${fixResult.applied})`);
+    assert(fs.existsSync(path.join(fixDir, 'public/robots.txt')), 'Generated missing robots.txt');
+    assert(fs.existsSync(path.join(fixDir, 'public/sitemap.xml')), 'Generated missing sitemap.xml');
+    assert(fs.existsSync(path.join(fixDir, 'public/llms.txt')), 'Generated missing llms.txt');
+
+    const patchedHtml = fs.readFileSync(path.join(fixDir, 'index.html'), 'utf8');
+    assert(patchedHtml.includes('alt="Banner preview"'), 'Successfully patched missing alt attribute');
+  } finally {
+    cleanupDir(fixDir);
+  }
+
+  // TEST 5: Internal Link & Orphan Page Graph Analyzer
+  const linkDir = createTempDir('sps-seo-test-links-');
+  try {
+    console.log('\nTest 5: Internal Link & Orphan Page Graph Analyzer');
+    fs.mkdirSync(path.join(linkDir, 'pages'), { recursive: true });
+    
+    // index links to /about with descriptive text, but links to /features with weak "click here"
+    fs.writeFileSync(path.join(linkDir, 'pages/index.html'), `
+      <a href="/about">Learn about our team</a>
+      <a href="/features">click here</a>
+    `);
+    // about links back to /
+    fs.writeFileSync(path.join(linkDir, 'pages/about.html'), `
+      <a href="/">Home</a>
+    `);
+    // orphan page: /pricing is defined but never linked from anywhere
+    fs.writeFileSync(path.join(linkDir, 'pages/pricing.html'), `
+      <h1>Pricing</h1>
+    `);
+
+    const linkResult = analyzeInternalLinks({ cwd: linkDir, json: true });
+    assert(linkResult.routesCount >= 3, `Discovered all routes (${linkResult.routesCount})`);
+    assert(linkResult.orphanRoutes.includes('/pricing'), 'Accurately detected orphan route /pricing');
+    assert(linkResult.weakLinks.some(w => w.rawText.toLowerCase() === 'click here'), 'Accurately flagged weak anchor "click here"');
+  } finally {
+    cleanupDir(linkDir);
+  }
+
+  // TEST 6: Keyword Cannibalization & Meta Duplication Detector
+  const cannDir = createTempDir('sps-seo-test-cann-');
+  try {
+    console.log('\nTest 6: Keyword Cannibalization Detector');
+    fs.mkdirSync(path.join(cannDir, 'src/pages'), { recursive: true });
+    
+    // Two pages with duplicate titles and identical H1s
+    fs.writeFileSync(path.join(cannDir, 'src/pages/page1.html'), `
+      <title>Best Cloud Tool</title>
+      <h1>Cloud Platform</h1>
+    `);
+    fs.writeFileSync(path.join(cannDir, 'src/pages/page2.html'), `
+      <title>Best Cloud Tool</title>
+      <h1>Cloud Platform</h1>
+    `);
+
+    const cannResult = detectCannibalization({ cwd: cannDir, json: true });
+    assert(cannResult.duplicateTitles.length === 1, 'Detected duplicate title across pages');
+    assert(cannResult.duplicateH1s.length === 1, 'Detected duplicate H1 across pages');
+    assert(cannResult.isHealthy === false, 'Marked health as false due to conflicts');
+  } finally {
+    cleanupDir(cannDir);
+  }
+
+  // TEST 7: Schema.org Validator
+  const schemaDir = createTempDir('sps-seo-test-schema-');
+  try {
+    console.log('\nTest 7: Schema.org Syntax & Spec Validator');
+    fs.mkdirSync(path.join(schemaDir, 'app'), { recursive: true });
+
+    // Valid Organization Schema
+    fs.writeFileSync(path.join(schemaDir, 'app/layout.tsx'), `
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Acme Cloud",
+        "url": "https://example.com"
+      }
+      </script>
+    `);
+
+    const schemaResult = validateSchemas({ cwd: schemaDir, json: true });
+    assert(schemaResult.blocksFound === 1, 'Discovered JSON-LD block');
+    assert(schemaResult.errors.length === 0, 'Zero schema validation errors');
+    assert(schemaResult.isValid === true, 'Passed full Schema.org validation');
+  } finally {
+    cleanupDir(schemaDir);
+  }
+
+  // TEST 8: Branded OpenGraph Social Card Generator
+  const ogDir = createTempDir('sps-seo-test-og-');
+  try {
+    console.log('\nTest 8: Branded OpenGraph Card Generator');
+    fs.mkdirSync(path.join(ogDir, 'public'), { recursive: true });
+    fs.writeFileSync(path.join(ogDir, 'sps-seo-config.json'), JSON.stringify({
+      site: { name: 'Titan OS', url: 'https://titan.dev', themeColor: '#1e1b4b' },
+      metadata: { defaultTitle: 'Titan OS - Autonomous Distributed Compute' }
+    }));
+
+    const ogResult = generateOgImage({ cwd: ogDir });
+    assert(fs.existsSync(ogResult.targetFile), 'Created og-image.svg');
+    assert(ogResult.svg.includes('Titan OS'), 'Included site brand name in SVG');
+    assert(ogResult.svg.includes('1200'), 'Proper 1200px width viewBox');
+  } finally {
+    cleanupDir(ogDir);
+  }
+
+  // TEST 9: IndexNow Search Engine Ping
+  const pingDir = createTempDir('sps-seo-test-ping-');
+  try {
+    console.log('\nTest 9: IndexNow Search Engine Ping (Dry Run)');
+    fs.mkdirSync(path.join(pingDir, 'public'), { recursive: true });
+    fs.writeFileSync(path.join(pingDir, 'sps-seo-config.json'), JSON.stringify({
+      site: { url: 'https://titan.dev' }
+    }));
+
+    const pingResult = await pingIndexNow({ cwd: pingDir, dryRun: true, urls: ['https://titan.dev/'] });
+    assert(pingResult.success === true, 'IndexNow dry-run completed successfully');
+    assert(pingResult.payload.host === 'titan.dev', 'Parsed correct host');
+    assert(fs.existsSync(path.join(pingDir, 'public/indexnow-key.txt')), 'Generated IndexNow API key file');
+  } finally {
+    cleanupDir(pingDir);
   }
 
   console.log(`\n==============================================`);

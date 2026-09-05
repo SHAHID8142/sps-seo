@@ -7,6 +7,8 @@
 [![Architecture](https://img.shields.io/badge/architecture-hybrid%20cli%20%2B%20agent-purple.svg)](METHOD-CARD.md)
 [![SEO & AEO](https://img.shields.io/badge/search-Google%20%2B%20AI%20Overviews-orange.svg)](guides/aeo-geo-optimization.md)
 [![CI Quality Gate](https://img.shields.io/badge/CI%20Gate-Score%20%E2%89%A5%2090-brightgreen.svg)](.github/workflows/seo-check.yml)
+[![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](package.json)
+[![Tests](https://img.shields.io/badge/tests-147%20passing-success.svg)](tests/)
 
 `sps-seo` is a production-grade, zero-hallucination AI Agent Skill designed to automate and orchestrate technical SEO, on-page optimization, Schema.org rich snippets, internal link graph analysis, Core Web Vitals performance, and modern Generative Engine Optimization (GEO/AEO).
 
@@ -14,177 +16,144 @@ Compatible with **Claude**, **Cursor**, **Codex**, **Antigravity (Gemini)**, **O
 
 ---
 
-## 🌟 Key Features
+## Table of Contents
 
-- 🎯 **Deterministic 100-Point Audit Engine (`npm run audit`):** Zero external dependencies. Evaluates AST/DOM structure, heading hierarchy, image `alt` coverage, canonicals, and robots/sitemaps.
-- 🛠️ **1-Click Automated Remediation (`npm run fix`):** Automatically scaffolds missing `robots.txt`, `sitemap.xml`, and `llms.txt`, and patches unannotated image `alt` attributes.
-- 🧙 **Interactive CLI Wizard (`npm run init`):** Prompts for brand, keywords, author (E-E-A-T), and domain parameters, generating a clean `sps-seo-config.json`.
-- 🔍 **Competitor Intelligence & Content Gap Matrix (`npm run competitor`):** Scrapes rival sites, extracts heading trees and schemas, and produces a topic gap matrix.
-- ⚡ **Core Web Vitals & Asset Budget Scanner (`npm run perf`):** Enforces 1.5MB low-end mobile payload limits, flags >200KB images, checks `font-display: swap`, and catches missing dimensions (CLS guard).
-- 👁️ **Visual SERP, Social & AI Citation Previewer (`npm run preview`):** Generates an interactive HTML preview (`public/seo-preview.html`) simulating Google Desktop/Mobile SERPs, Twitter/X cards, and AI Overview citations.
-- 🔗 **Internal Link & Orphan Page Graph (`npm run links`):** Maps internal crawl equity, identifies orphan pages, and flags weak anchor texts (`click here`, `more`).
-- ⚔️ **Keyword Cannibalization Detector (`npm run cannibalization`):** Flags duplicate titles, duplicate descriptions, and competing target keywords across pages.
-- 🧩 **Schema.org Syntax & Spec Validator (`npm run validate-schema`):** Strict verification of JSON-LD scripts against Schema.org and Google Rich Results guidelines.
-- 🌐 **Multilingual i18n & `hreflang` Reciprocity Engine (`npm run i18n`):** Validates bidirectional alternate link reciprocity, checks for `x-default`, and verifies ISO codes.
-- 🎨 **Branded OpenGraph Card Generator (`npm run og`):** Generates crisp 1200x630 branded SVG social preview cards using brand theme colors and metadata.
-- 🏷️ **Dynamic SVG Score Badge Generator (`npm run badge`):** Generates a live vector badge for `README.md` reflecting your deterministic audit score.
-- 🗃️ **Markdown & MDX Content-First Auditing (`npm run audit`):** Scans `.md`/`.mdx` files (Astro content collections, Next.js MDX, Docusaurus) — frontmatter title/description, ATX heading hierarchy, and markdown image `alt` coverage are now first-class audit signals.
-- 📹 **Video SEO Audit (`npm run video`):** Validates `VideoObject` JSON-LD required fields (`name`, `description`, `thumbnailUrl`, `uploadDate`, `duration`, `contentUrl/embedUrl`), detects YouTube/Vimeo/self-hosted embeds, enforces privacy-enhanced `youtube-nocookie.com` embeds, and flags missing video sitemaps.
-- 📰 **News & Publishing Audit (`npm run news`):** Validates `NewsArticle` schema (headline length, ISO dates, author E-E-A-T, publisher logo), flags stale news content, detects news sitemaps, and surfaces paywall `isAccessibleForFree` declarations.
-- 🛒 **E-Commerce SEO Audit (`npm run ecom`):** Validates Product/Offer schema (price, priceCurrency, availability enum, sku/brand), enforces self-canonical pagination on `/page/2`-style PLP routes, and checks for `ItemList` schema on category pages.
-- 📍 **Local SEO Audit (`npm run local`):** Validates LocalBusiness schema (address, geo, opening hours, sameAs) and runs a **NAP consistency engine** that flags the same phone number written in different formats across pages.
-- 🧬 **Near-Duplicate Content Detector (`npm run dup`):** Combines 64-bit SimHash with token-Jaccard to flag near-duplicate page pairs and duplicate `<title>` tags — no crypto dependencies, fully deterministic.
-- 🗺️ **Sitemap Validator (`npm run sitemap:validate`):** Validates `<loc>` absolute URLs, maps every URL back to a real project route (static, App Router, Pages Router, content files, `[slug]` dynamic), validates `lastmod` W3C datetime, enforces 50k-URL/50MB limits, and checks sitemap-index children + hreflang `x-default`.
-- 📡 **RSS 2.0 Feed Generator (`npm run rss`):** Compiles `public/rss.xml` from markdown frontmatter and/or HTML `<time>`, newest-first, capped at 50 items.
-- 🏢 **CMS Adapters:** New playbooks for **WordPress, Shopify, Webflow, and headless CMS (Sanity/Contentful/Strapi/Payload)** in `adapters/`.
-- 🎛️ **Unified CLI Router (`npx sps-seo <command>`):** One binary (`scripts/cli.mjs`) dispatches every tool with a shared `--help` catalog — equivalent to `npm run <command>`.
-- ⚡ **Instant IndexNow API Ping (`npm run ping-indexnow`):** Directly notifies Bing, Yandex, and IndexNow crawlers upon page and route updates.
-- 🛡️ **GitHub Actions CI Quality Gate (`.github/workflows/seo-check.yml`):** Automatically blocks pull requests if the SEO audit score drops below **90/100 (Grade A)**.
-- 💯 **Lighthouse 100/100 Playbook & Master Optimization Guides:** Detailed blueprints for 100/100 across Performance, Accessibility, Best Practices, and SEO ([guides/lighthouse-100-playbook.md](guides/lighthouse-100-playbook.md), [guides/asset-optimization-master.md](guides/asset-optimization-master.md)).
-- 🤖 **2026 AI Search & Citation Bot Policy:** Compliant with OpenAI, Anthropic, and Perplexity citation crawlers (`OAI-SearchBot`, `ClaudeBot`, `PerplexityBot`), dual `llms.txt` + `llms-full.txt` generation, and training-bot opt-out controls.
-- 🚀 **Third-Party Script Isolation & Edge Caching:** Web Worker offloading via Partytown, interaction-deferred script facades, and immutable CDN caching recipes ([guides/third-party-scripts-strategy.md](guides/third-party-scripts-strategy.md), [guides/caching-and-headers-guide.md](guides/caching-and-headers-guide.md)).
-- 🛡️ **Enterprise Security & Best Practices Scanner (`npm run security`):** Static analyzer auditing HTTP security headers (HSTS, CSP, X-Frame-Options, nosniff, Referrer-Policy), public folder leaks (`.env`, `.git`), hardcoded API keys/secrets, mixed content (`http://`), un-sanitized DOM injections, and viewport zoom accessibility.
-- 📊 **Unified Search Disciplines (SEO, AEO, GEO, AIO, SXO):** Exhaustive architectural coverage uniting traditional crawl/rank (SEO), direct question answering (AEO), generative LLM citations (GEO), Google AI Overviews (AIO), and Core Web Vitals UX (SXO) ([guides/modern-search-disciplines-seo-aeo-geo-aio-sxo.md](guides/modern-search-disciplines-seo-aeo-geo-aio-sxo.md)).
-- 🔤 **Keyword Prominence, Density & Intent Engine (`npm run keyword`):** Audits exact/secondary keyword density, checks prominence across Title, H1, first 100 words, slug, and meta description, with stuffing guard (>3%).
-- 🧮 **Algorithmic TF*IDF & Semantic Entity Scanner (`npm run tfidf`):** Computes mathematical TF, IDF, and TF*IDF across unigrams and bigrams, mapping topical authority and identifying semantic content gaps.
-- 🎯 **15-Signal SERP Ranking Probability Engine (`npm run ranking`):** Computes a 0–100 probability score across search intent, content depth, E-E-A-T credentials, and rich formatting.
-- 💬 **Featured Snippets & Answer Capsule Optimizer (`npm run snippet`):** Identifies and optimizes 40–60 word answer capsules, procedural step lists (`<ol>`), and comparison tables (`<table>`).
-- 🔀 **Redirects, Chains & Canonical Auditor (`npm run redirect`):** Audits 301 vs 302 rules across Next.js, Vercel, and Netlify, flags link equity leaks, redirect loops, and trailing slash discrepancies.
-- 🔗 **Backlink Equity & Digital PR Engine (`npm run backlink`):** Outbound link equity scanner, unlinked brand mention query generator, and data-driven digital PR outreach pitches.
-- ⚖️ **Side-by-Side Competitive Benchmark (`npm run compare`):** Compares your site directly against competitor checkouts across 26 technical and content dimensions.
-- 🔄 **SPS Ecosystem Native & Dual-Memory:** Bidirectional synchronization between `sps-seo-config.json` and `./.sps/seo.json`.
-- 📋 **Zero-Install Portability:** Includes a standalone monolithic [SYSTEM-PROMPT.md](SYSTEM-PROMPT.md) for direct copy-pasting or GitHub raw retrieval.
+1. [What is SPS SEO?](#what-is-sps-seo)
+2. [Who is it For?](#who-is-it-for)
+3. [Key Features](#key-features)
+4. [System Requirements](#system-requirements)
+5. [Installation](#installation)
+6. [Updating](#updating)
+7. [Uninstalling](#uninstalling)
+8. [Quick Start](#quick-start)
+9. [Complete Command Reference](#complete-command-reference)
+10. [Workflow Guides](#workflow-guides)
+11. [Agent Integration](#agent-integration)
+12. [Configuration](#configuration)
+13. [CI/CD Integration](#cicd-integration)
+14. [Testing](#testing)
+15. [Architecture](#architecture)
+16. [Troubleshooting](#troubleshooting)
+17. [Contributing](#contributing)
+18. [License](#license)
 
 ---
 
-## 🏗️ Repository Architecture
+## What is SPS SEO?
 
-```text
-sps-seo/
-├── SKILL.md                          # Main agent skill specification & prompt entrypoint
-├── METHOD-CARD.md                    # Core inlined hard laws, anti-hallucination rules, DoD
-├── SYSTEM-PROMPT.md                  # Portable monolithic system prompt for zero-install setups
-├── sps-seo-config.example.json       # Project configuration template
-├── package.json                      # NPM scripts and project metadata
-├── README.md                         # Documentation & installation manual
-├── VERSION                           # Current skill version stamp (1.4.0)
-├── .github/
-│   └── workflows/
-│       └── seo-check.yml             # Automated CI quality gate enforcing score >= 90
-├── scripts/
-│   ├── init.mjs                      # Interactive CLI setup wizard
-│   ├── audit.mjs                     # Zero-dependency deterministic audit scanner (100-pt score)
-│   ├── fix.mjs                       # 1-click automated remediation engine (--dry-run / --apply)
-│   ├── competitor-intel.mjs          # Competitor intelligence & Content Gap Matrix generator
-│   ├── perf-budget.mjs               # Core Web Vitals & asset weight budget scanner
-│   ├── security-check.mjs            # Enterprise security headers, secret leaks & best practices scanner
-│   ├── keyword-check.mjs             # Keyword density, prominence & search intent analyzer
-│   ├── tfidf-analyzer.mjs            # Algorithmic TF*IDF & semantic entity co-occurrence calculator
-│   ├── ranking-intel.mjs             # 15-signal SERP ranking probability engine
-│   ├── snippet-optimizer.mjs         # Featured snippet, answer capsule & FAQ schema generator
-│   ├── redirect-audit.mjs            # 301/302 redirects, chains & canonical trailing slash auditor
-│   ├── backlink-intel.mjs            # Backlink equity, unlinked brand mentions & digital PR engine
-│   ├── seo-compare.mjs               # Side-by-side competitive benchmark matrix generator
-│   ├── preview-serp.mjs              # Visual SERP, Social, and AI Citation previewer
-│   ├── internal-links.mjs            # Internal link graph analyzer & orphan page detector
-│   ├── cannibalization.mjs           # Keyword cannibalization & duplicate meta checker
-│   ├── validate-schema.mjs           # Schema.org syntax & Google Rich Results validator
-│   ├── i18n-seo.mjs                  # Multilingual i18n & hreflang reciprocity validator
-│   ├── generate-og.mjs               # Branded 1200x630 vector OpenGraph card generator
-│   ├── generate-sitemap.mjs          # Route discovery, sitemap.xml, robots.txt, llms.txt generator
-│   ├── badge.mjs                     # Live SVG SEO score badge generator
-│   ├── ping-indexnow.mjs             # Direct IndexNow API search engine ping utility
-│   ├── sync-config.mjs               # Dual config synchronizer (.sps/seo.json <-> sps-seo-config.json)
-│   └── install.sh                    # 1-click global or local installer
-├── adapters/
-│   ├── nextjs-app.md                 # Next.js App Router (layout metadata, generateMetadata)
-│   ├── nextjs-pages.md               # Next.js Pages Router (next/head, _app, SEO component)
-│   ├── astro.md                      # Astro (<Layout />, props, @astrojs/sitemap)
-│   ├── vite-react.md                 # Vite/React SPA (react-helmet-async + index.html fallback)
-│   ├── static-html.md                # Raw HTML, semantic landmarks, inline JSON-LD
-│   └── universal-fallback.md         # Nuxt 3, SvelteKit, Laravel Blade, Django
-├── schemas/
-│   ├── organization.json             # Organization & Brand schema
-│   ├── website.json                  # WebSite & Sitelinks SearchBox schema
-│   ├── local-business.json           # LocalBusiness with Geo & opening hours schema
-│   ├── article.json                  # Article & BlogPosting with E-E-A-T author
-│   ├── product.json                  # Product & AggregateOffer schema
-│   ├── software-app.json             # SoftwareApplication & ratings schema
-│   ├── faq.json                      # FAQPage schema
-│   └── breadcrumb.json               # BreadcrumbList schema
-└── guides/
-    ├── modern-search-disciplines-seo-aeo-geo-aio-sxo.md # Unified SEO, AEO, GEO, AIO & SXO playbook
-    ├── phase1-discovery-audit.md        # Discovery intake questions & scoring guidelines
-    ├── phase2-codebase-execution.md     # Surgical codebase modification playbook
-    ├── phase3-external-seo.md           # GSC setup, DNS verification, indexing requests, backlinks
-    ├── aeo-geo-optimization.md          # AI Overviews, answer capsules, citation triggers, llms.txt
-    ├── core-web-vitals-checklist.md     # LCP, INP (<200ms), CLS optimization checklist
-    ├── lighthouse-100-playbook.md       # 100/100 across Perf, a11y, best-practices & SEO
-    ├── asset-optimization-master.md     # AVIF/WebP, WOFF2 subsetting, zero-CLS font metrics
-    ├── third-party-scripts-strategy.md  # Partytown web workers, deferred facades, GTM/analytics
-    └── caching-and-headers-guide.md     # Immutable caching, Brotli, CDN edge rules, security headers
+SPS SEO is a **deterministic SEO audit engine** combined with an **AI agent skill** that enables any AI coding assistant to autonomously audit, optimize, and fix the SEO of any web project.
+
+Unlike subjective SEO checklists, SPS SEO uses a **100-point deterministic scoring system** that produces the same result every time — zero hallucination, zero guesswork.
+
+### How It Works
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        SPS SEO WORKFLOW                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. INSTALL          Install skill to agent directory           │
+│           │                                                     │
+│           ▼                                                     │
+│  2. CONFIGURE        Run init.mjs → sps-seo-config.json         │
+│           │                                                     │
+│           ▼                                                     │
+│  3. AUDIT            Run audit.mjs → Score 0-100                │
+│           │                                                     │
+│           ▼                                                     │
+│  4. FIX              Run fix.mjs → Auto-remediate issues        │
+│           │                                                     │
+│           ▼                                                     │
+│  5. VERIFY           Run audit.mjs → Confirm score ≥ 90         │
+│           │                                                     │
+│           ▼                                                     │
+│  6. DEPLOY           Generate assets, ping search engines       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## ⚡ Complete CLI Command Catalog
+## Who is it For?
 
-```bash
-# 1. Setup & Configuration
-npm run init                # Interactive setup wizard
-npm run sync-config         # Syncs sps-seo-config.json <-> .sps/seo.json
-
-# 2. Auditing & Technical Diagnostics
-npm run audit               # Deterministic 100-pt audit scanner
-npm run audit:json          # Output audit in pure JSON
-npm run keyword             # Keyword density, prominence & intent analyzer
-npm run tfidf               # Algorithmic TF*IDF & semantic entity scanner
-npm run ranking             # 15-signal SERP ranking probability engine
-npm run snippet             # Featured snippet & 40-60w answer capsule optimizer
-npm run redirect            # 301/302 redirects, chains & trailing slash audit
-npm run backlink            # Backlink equity & digital PR outreach generator
-npm run links               # Internal link graph & orphan page analyzer
-npm run cannibalization     # Keyword cannibalization & duplicate meta detector
-npm run validate-schema     # Schema.org JSON-LD validator
-npm run perf                # Core Web Vitals & asset budget scanner
-npm run security            # Enterprise security headers & best practices scanner
-npm run security:json       # Output security scan in pure JSON
-npm run i18n                # Multilingual hreflang reciprocity check
-
-# 2b. Vertical SEO Audits (v1.4)
-npm run video               # Video SEO (VideoObject schema, embeds, video sitemap)
-npm run news                # News SEO (NewsArticle schema, freshness, news sitemap)
-npm run ecom                # E-commerce SEO (Product/Offer schema, pagination canonicals)
-npm run local               # Local SEO (LocalBusiness schema, NAP consistency)
-npm run dup                 # Near-duplicate content & duplicate-title detector
-npm run sitemap:validate    # Sitemap URL resolution, lastmod, index & hreflang checks
-npm run rss                 # Generate RSS 2.0 feed from content pages
-
-# 3. Competitor Intelligence & Benchmarks
-npm run competitor          # Scrapes competitor URLs & generates Topic Gap Matrix
-npm run compare             # Side-by-side technical & content comparison
-npm run preview             # Generates interactive HTML SERP & social preview dashboard
-npm run badge               # Generates live SVG SEO score badge
-
-# 4. Automated Remediation & Asset Compilation
-npm run fix:dry             # Preview 1-click automatic fixes
-npm run fix                 # Apply automatic fixes (robots, sitemaps, alts)
-npm run sitemap             # Compile sitemap.xml, robots.txt, llms.txt & llms-full.txt
-npm run og                  # Generate branded 1200x630 og-image.svg
-
-# 5. Search Engine Indexing & CI Tests
-npm run ping-indexnow       # Alert IndexNow (Bing/Yandex) with updated routes
-npm test                    # Run comprehensive automated test suite (core + verticals)
-npm run test:phase2         # Run the vertical/expansion test suite only
-# Unified CLI: npx sps-seo <command> dispatches every tool (or `npm run <command>`)
-```
+- **Web Developers** who want automated SEO audits without manual checklists
+- **SEO Specialists** who need deterministic, reproducible scoring
+- **AI Agent Users** who want their coding assistant to handle SEO automatically
+- **Agencies** who manage multiple client websites
+- **Content Creators** who optimize for AI search engines (Google AI Overviews, Perplexity, ChatGPT Search)
 
 ---
 
-## 🚀 Quick Installation
+## Key Features
 
-### 1-Click Global Install (Recommended)
-Installs into all detected agent directories (Claude, Cursor, Windsurf, Gemini):
+### Core SEO Engine
+- **Deterministic 100-Point Audit Engine** (`audit.mjs`): Zero external dependencies. Evaluates AST/DOM structure, heading hierarchy, image `alt` coverage, canonicals, and robots/sitemaps.
+- **1-Click Automated Remediation** (`fix.mjs`): Automatically scaffolds missing `robots.txt`, `sitemap.xml`, and `llms.txt`, and patches unannotated image `alt` attributes.
+- **Interactive CLI Wizard** (`init.mjs`): Prompts for brand, keywords, author (E-E-A-T), and domain parameters, generating a clean `sps-seo-config.json`.
+
+### On-Page Optimization
+- **Keyword Density & Prominence Analyzer** (`keyword.mjs`): Checks keyword placement in Title, H1, first 100 words, and overall density (target 1.0%-2.5%).
+- **TF*IDF Semantic Entity Scanner** (`tfidf.mjs`): Algorithmic content optimization using term frequency-inverse document frequency.
+- **Featured Snippet Optimizer** (`snippet.mjs`): Optimizes content for Google featured snippets and 40-60 word answer capsules.
+- **Keyword Cannibalization Detector** (`cannibalization.mjs`): Flags duplicate titles, duplicate descriptions, and competing target keywords across pages.
+
+### Technical SEO
+- **Internal Link & Orphan Page Graph** (`links.mjs`): Maps internal crawl equity, identifies orphan pages, and flags weak anchor texts.
+- **Redirect Chain Auditor** (`redirect.mjs`): Detects 301/302 redirect chains, loops, and trailing slash inconsistencies.
+- **Sitemap Generator** (`sitemap.mjs`): Compiles `sitemap.xml`, `robots.txt`, `llms.txt` and `llms-full.txt`.
+- **Sitemap Validator** (`sitemap:validate.mjs`): Validates URL resolution, lastmod dates, 50k/50MB limits, and hreflang x-default.
+
+### Schema.org & Structured Data
+- **Schema Validator** (`validate-schema.mjs`): Strict verification of JSON-LD scripts against Schema.org and Google Rich Results guidelines.
+- **17 Ready-Made Schema Templates**: Article, Product, FAQ, HowTo, LocalBusiness, Video, NewsArticle, Event, JobPosting, Recipe, Course, Speakable, Dataset, SoftwareApp, Breadcrumb, Organization, Website.
+
+### Vertical SEO
+- **Video SEO** (`video.mjs`): Validates VideoObject schema, detects embeds, enforces privacy-enhanced embeds.
+- **News SEO** (`news.mjs`): Validates NewsArticle schema, checks freshness, news sitemap, paywall flags.
+- **E-commerce SEO** (`ecom.mjs`): Validates Product/Offer schema, pagination canonicals, ItemList.
+- **Local SEO** (`local.mjs`): Validates LocalBusiness schema, NAP consistency, geo coordinates.
+
+### Performance & Security
+- **Core Web Vitals Scanner** (`perf.mjs`): Enforces 1.5MB payload limits, flags >200KB images, checks `font-display: swap`, catches missing dimensions (CLS guard).
+- **Security Headers Auditor** (`security.mjs`): Checks HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy.
+- **Secret Leak Scanner** (`secrets.mjs`): Scans for hardcoded credentials, API keys, and exposed `.env` files.
+- **Bundle Analyzer** (`bundle.mjs`): Audits JavaScript bundle weight and third-party scripts.
+
+### AI Search Optimization (AEO/GEO)
+- **AI Search Optimizer**: Generates `llms.txt` for LLM citations, FAQ schema for answer capsules, speakable schema for voice search.
+- **Modern Search Disciplines**: Covers SEO, AEO, GEO, AIO, and SXO optimization strategies.
+
+### Intelligence & Preview
+- **Competitor Intelligence** (`competitor.mjs`): Scrapes rival sites, extracts heading trees and schemas, produces topic gap matrix.
+- **SEO Comparison** (`compare.mjs`): Side-by-side technical & content comparison.
+- **SERP & Social Previewer** (`preview.mjs`): Generates interactive HTML preview simulating Google Desktop/Mobile SERPs, Twitter/X cards, and AI Overview citations.
+- **Live Crawler** (`crawler.mjs`): Polite robots-aware live crawler with TTFB, soft-404, and SPA detection.
+- **PageSpeed Insights** (`pagespeed.mjs`): Fetches PageSpeed Insights v5 + CrUX field data.
+- **Google Search Console** (`gsc.mjs`): Analyzes GSC data via CSV or Service Account API.
+- **Access Log Analyzer** (`logs.mjs`): Analyzes server access logs for crawl budget and 404 hotspots.
+
+### Asset Generation
+- **OpenGraph Card Generator** (`og.mjs`): Generates crisp 1200x630 branded SVG social preview cards.
+- **Score Badge Generator** (`badge.mjs`): Generates live vector badge for README.md reflecting your deterministic audit score.
+- **RSS Feed Generator** (`rss.mjs`): Generates RSS 2.0 feed from content pages.
+- **IndexNow Pinger** (`ping-indexnow.mjs`): Notifies Bing/Yandex of updated routes.
+
+---
+
+## System Requirements
+
+- **Node.js**: >= 18.0.0
+- **Operating System**: macOS, Linux, Windows (WSL recommended)
+- **Git**: For installation and updates
+- **curl**: For update checking
+
+---
+
+## Installation
+
+### Method 1: Global Install (Recommended)
+
+Installs into all detected agent directories so any AI coding assistant can use SPS SEO:
 
 ```bash
 git clone https://github.com/shahid/sps-seo.git
@@ -192,80 +161,135 @@ cd sps-seo
 ./scripts/install.sh --global
 ```
 
-### Local Project Install
-Installs into a specific project's `./.agents/skills/sps-seo`:
+**Installs to:**
+- `~/.agents/skills/sps-seo` (Claude Code, OpenCode)
+- `~/.gemini/config/skills/sps-seo` (Gemini, Antigravity)
+- `~/.cursor/skills/sps-seo` (Cursor)
+- `~/.windsurf/skills/sps-seo` (Windsurf)
+
+### Method 2: Local Project Install
+
+Installs into a specific project's `.agents/skills/sps-seo`:
 
 ```bash
 ./scripts/install.sh --local
 ```
 
-### Copy Mode (Standalone)
-Creates a full copy instead of a symlink (no link to source):
+### Method 3: Copy Mode (Standalone)
+
+Creates a full copy instead of a symlink (no link to source repository):
 
 ```bash
 ./scripts/install.sh --copy
 ```
 
-### Force Overwrite
+### Method 4: Force Overwrite
+
 Overwrite existing installations without prompting:
 
 ```bash
 ./scripts/install.sh --force
 ```
 
+### Method 5: Dry Run
+
+Preview what would happen without executing:
+
+```bash
+./scripts/install.sh --dry-run
+```
+
+### Method 6: Remote Pull (No Clone)
+
+Pull directly from GitHub without cloning:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/shahid/sps-seo/main/scripts/pull-skill.sh | bash
+```
+
+Or with custom repo URL:
+
+```bash
+SPS_SEO_REPO_URL=https://github.com/user/repo.git ./scripts/pull-skill.sh
+```
+
 ---
 
-## 🔄 Updating to Latest Version
+## Updating
 
 ### Check for Updates
+
 ```bash
 ./scripts/update.sh --check
 ```
 
-### Update to Latest
+### Update to Latest Version
+
 ```bash
 ./scripts/update.sh
 ```
 
 ### Force Reinstall
+
 ```bash
 ./scripts/update.sh --force
 ```
 
-**How it works:**
-- If installed via `git clone`: pulls latest changes
-- If installed via symlink: updates the source repository
-- If installed via copy: reinstalls from GitHub
+### How Updates Work
+
+| Install Type | Update Method |
+|--------------|---------------|
+| Git clone | `git pull` latest changes |
+| Symlink | Updates the source repository |
+| Copy | Reinstalls from GitHub |
+
+### Custom Repository URL
+
+```bash
+SPS_SEO_REPO_URL=https://github.com/user/repo.git ./scripts/update.sh
+```
 
 ---
 
-## 🗑️ Uninstalling
+## Uninstalling
 
 ### Interactive Uninstall (prompts for each installation)
+
 ```bash
 ./scripts/uninstall.sh
 ```
 
 ### Force Uninstall (no prompts)
+
 ```bash
 ./scripts/uninstall.sh --force
 ```
 
 ### Preview What Would Be Removed
+
 ```bash
 ./scripts/uninstall.sh --dry-run
 ```
 
-**Removes from all locations:**
+### What Gets Removed
+
 - `~/.agents/skills/sps-seo` (Claude, OpenCode)
 - `~/.gemini/config/skills/sps-seo` (Gemini, Antigravity)
 - `~/.cursor/skills/sps-seo` (Cursor)
 - `~/.windsurf/skills/sps-seo` (Windsurf)
 - `./.agents/skills/sps-seo` (Local)
 
+### What Gets Preserved
+
+- Your project's `sps-seo-config.json`
+- Generated files (`sitemap.xml`, `robots.txt`, etc.)
+- Any edits made to your project files
+
 ---
 
-## 📋 Quick Start Workflow
+## Quick Start
+
+### For a New Project
 
 ```bash
 # 1. Configure your project
@@ -290,8 +314,571 @@ node scripts/badge.mjs
 node scripts/ping-indexnow.mjs
 ```
 
+### For an Existing Project
+
+```bash
+# 1. Run comprehensive audit
+node scripts/audit.mjs --json
+
+# 2. Check internal links
+node scripts/links.mjs
+
+# 3. Check keyword conflicts
+node scripts/cannibalization.mjs
+
+# 4. Check security
+node scripts/security.mjs
+
+# 5. Check performance
+node scripts/perf.mjs
+
+# 6. Fix everything
+node scripts/fix.mjs --apply
+
+# 7. Verify final score >= 90
+node scripts/audit.mjs
+```
+
 ---
 
-## 📄 License
+## Complete Command Reference
+
+### 1. Core Commands
+
+| Command | Description |
+|---------|-------------|
+| `npm run init` | Interactive setup wizard for `sps-seo-config.json` |
+| `npm run audit` | Deterministic 100-point audit scanner |
+| `npm run audit:json` | Output audit in pure JSON |
+| `npm run fix` | Apply automatic fixes |
+| `npm run fix:dry` | Preview automatic fixes |
+
+### 2. On-Page SEO
+
+| Command | Description |
+|---------|-------------|
+| `npm run keyword` | Keyword density, prominence & intent analyzer |
+| `npm run tfidf` | TF*IDF & semantic entity scanner |
+| `npm run snippet` | Featured snippet & 40-60w answer capsule optimizer |
+| `npm run cannibalization` | Keyword cannibalization & duplicate meta detector |
+
+### 3. Technical SEO
+
+| Command | Description |
+|---------|-------------|
+| `npm run links` | Internal link graph & orphan page analyzer |
+| `npm run redirect` | 301/302 redirects, chains & trailing slash audit |
+| `npm run sitemap` | Compile sitemap.xml, robots.txt, llms.txt & llms-full.txt |
+| `npm run sitemap:validate` | Sitemap URL resolution, lastmod, index & hreflang checks |
+| `npm run rss` | Generate RSS 2.0 feed from content pages |
+
+### 4. Vertical SEO
+
+| Command | Description |
+|---------|-------------|
+| `npm run video` | Video SEO (VideoObject schema, embeds, video sitemap) |
+| `npm run news` | News SEO (NewsArticle schema, freshness, news sitemap) |
+| `npm run ecom` | E-commerce SEO (Product/Offer schema, pagination canonicals) |
+| `npm run local` | Local SEO (LocalBusiness schema, NAP consistency) |
+| `npm run dup` | Near-duplicate content & duplicate-title detector |
+
+### 5. Performance & Security
+
+| Command | Description |
+|---------|-------------|
+| `npm run perf` | Core Web Vitals & asset budget scanner |
+| `npm run bundle` | JavaScript bundle weight & third-party scripts |
+| `npm run security` | Enterprise security headers & best practices scanner |
+| `npm run security:json` | Output security scan in pure JSON |
+| `npm run secrets` | Hardcoded secrets & credential leak scanner |
+| `npm run a11y` | Accessibility (WCAG) scanner |
+| `npm run lighthouse` | Lighthouse CI performance audit |
+
+### 6. Intelligence & Preview
+
+| Command | Description |
+|---------|-------------|
+| `npm run competitor` | Scrapes competitor URLs & generates Topic Gap Matrix |
+| `npm run compare` | Side-by-side technical & content comparison |
+| `npm run ranking` | 15-signal SERP ranking probability engine |
+| `npm run rank-tracker` | Track ranking momentum from GSC/CSV data |
+| `npm run preview` | Generates interactive HTML SERP & social preview dashboard |
+| `npm run crawl` | Polite robots-aware live crawler |
+| `npm run pagespeed` | PageSpeed Insights & CrUX field data |
+| `npm run gsc` | Google Search Console data analyzer |
+| `npm run logs` | Server access log analyzer |
+| `npm run monorepo` | Monorepo structure detector |
+
+### 7. Asset Generation
+
+| Command | Description |
+|---------|-------------|
+| `npm run og` | Generate branded 1200x630 og-image.svg |
+| `npm run badge` | Generate live SVG SEO score badge |
+| `npm run validate-schema` | Schema.org JSON-LD validator |
+| `npm run i18n` | Multilingual hreflang reciprocity check |
+
+### 8. Indexing & CI
+
+| Command | Description |
+|---------|-------------|
+| `npm run ping-indexnow` | Alert IndexNow (Bing/Yandex) with updated routes |
+| `npm test` | Run comprehensive automated test suite (core + verticals) |
+| `npm run test:core` | Run core test suite only |
+| `npm run test:phase2` | Run vertical/expansion test suite only |
+
+### 9. Unified CLI
+
+```bash
+# Use the unified CLI for any command
+npx sps-seo <command>
+
+# Examples
+npx sps-seo audit --json
+npx sps-seo fix --apply
+npx sps-seo security --json
+```
+
+---
+
+## Workflow Guides
+
+### Full SEO Overhaul
+
+```
+PHASE 1: DISCOVERY
+1. Run: node scripts/init.mjs (if not configured)
+2. Run: node scripts/audit.mjs --json (baseline score)
+3. Run: node scripts/links.mjs (internal links)
+4. Run: node scripts/cannibalization.mjs (keyword conflicts)
+5. Run: node scripts/security.mjs (security audit)
+6. Run: node scripts/perf.mjs (performance)
+
+PHASE 2: EXECUTION
+7. Run: node scripts/fix.mjs --dry-run (preview fixes)
+8. Run: node scripts/fix.mjs --apply (apply fixes)
+9. Run: node scripts/sitemap.mjs (generate sitemaps)
+10. Run: node scripts/og.mjs (generate social image)
+11. Run: node scripts/validate-schema.mjs (validate schemas)
+
+PHASE 3: VERIFICATION
+12. Run: node scripts/audit.mjs (final score >= 90)
+13. Run: node scripts/preview.mjs (visual preview)
+14. Run: node scripts/badge.mjs (README badge)
+15. Run: node scripts/ping-indexnow.mjs (notify search engines)
+```
+
+### Pre-Deploy Checklist
+
+```
+1. node scripts/audit.mjs (score >= 90)
+2. node scripts/lighthouse.mjs (performance)
+3. node scripts/security.mjs (no secret leaks)
+4. node scripts/sitemap:validate.mjs (valid sitemap)
+5. node scripts/redirect.mjs (no broken redirects)
+6. node scripts/dup.mjs (no duplicate content)
+```
+
+### Single-Task Prompts
+
+| Task | Prompt |
+|------|--------|
+| **Fix meta tags** | "Run `node scripts/audit.mjs` and fix all missing/duplicate meta tags" |
+| **Generate schema** | "Generate JSON-LD schema for this page type and validate with `node scripts/validate-schema.mjs`" |
+| **Fix images** | "Audit all images: missing alt tags, oversized files, missing dimensions" |
+| **Internal links** | "Run `node scripts/links.mjs` and fix all orphan pages" |
+| **Keyword check** | "Run `node scripts/keyword.mjs` and optimize keyword density to 1-2.5%" |
+| **Performance** | "Run `node scripts/perf.mjs` and fix Core Web Vitals issues" |
+| **Security** | "Run `node scripts/security.mjs` and add missing security headers" |
+| **Competitor gap** | "Run `node scripts/competitor.mjs <url>` and list content gaps" |
+| **Local SEO** | "Run `node scripts/local.mjs` and fix NAP consistency" |
+| **Video SEO** | "Run `node scripts/video.mjs` and add VideoObject schema" |
+
+---
+
+## Agent Integration
+
+### Claude Code
+
+**Installation:** `./scripts/install.sh --global` installs to `~/.agents/skills/sps-seo`
+
+**Usage:**
+```
+Run: node scripts/audit.mjs --json
+Run: node scripts/fix.mjs --apply
+```
+
+See [hosts/claude.md](hosts/claude.md) for details.
+
+### Cursor
+
+**Installation:** `./scripts/install.sh --global` installs to `~/.cursor/skills/sps-seo`
+
+**Usage:**
+- Mirror `SYSTEM-PROMPT.md` core directives into `.cursorrules` or `.cursor/rules/seo.mdc`
+- Run commands in Cursor terminal
+
+See [hosts/cursor.md](hosts/cursor.md) for details.
+
+### OpenAI Codex
+
+**Usage:**
+- In web UI: Load instructions from `SYSTEM-PROMPT.md`
+- In sandbox: Run `node scripts/audit.mjs` directly
+
+See [hosts/codex.md](hosts/codex.md) for details.
+
+### Windsurf (Cascade)
+
+**Installation:** `./scripts/install.sh --global` installs to `~/.windsurf/skills/sps-seo`
+
+**Usage:**
+- Store brand/keyword/domain facts from `sps-seo-config.json` as Cascade Memories
+- Run commands via Cascade's command tool
+
+See [hosts/windsurf.md](hosts/windsurf.md) for details.
+
+### Antigravity / Gemini
+
+**Installation:** `./scripts/install.sh --global` installs to `~/.gemini/config/skills/sps-seo`
+
+**Usage:**
+- Use `run_command` to execute `npm run audit` and `npm run fix`
+- Write audit findings to `sps-seo-audit-report.md`
+
+See [hosts/antigravity.md](hosts/antigravity.md) for details.
+
+### OpenCode
+
+**Installation:** `./scripts/install.sh --global` installs to `~/.agents/skills/sps-seo`
+
+**Usage:**
+- Execute commands using native bash tools
+- Reference `sps-seo-config.json` before proposing metadata changes
+
+See [hosts/opencode.md](hosts/opencode.md) for details.
+
+### MCP Server
+
+SPS SEO includes a full MCP (Model Context Protocol) server for integration with MCP-compatible agents:
+
+```bash
+npm run mcp
+```
+
+Exposes all 40+ tools via MCP 2024-11-05 protocol over stdio.
+
+---
+
+## Configuration
+
+### Initial Setup
+
+Run the interactive wizard:
+
+```bash
+node scripts/init.mjs
+```
+
+This creates `sps-seo-config.json` with:
+- Brand name and description
+- Target keywords
+- Author information (E-E-A-T)
+- Domain URL
+- Social media handles
+- Theme colors
+
+### Configuration File Format
+
+```json
+{
+  "brand": "Your Brand",
+  "description": "Your brand description",
+  "keywords": ["keyword1", "keyword2"],
+  "author": "Author Name",
+  "domain": "https://example.com",
+  "social": {
+    "twitter": "@handle",
+    "github": "username"
+  },
+  "colors": {
+    "primary": "#3b82f6",
+    "secondary": "#10b981"
+  }
+}
+```
+
+### Dual Memory Synchronization
+
+If your project uses the SPS workflow (`.sps/` directory), run:
+
+```bash
+node scripts/sync-config.mjs
+```
+
+This maintains bidirectional synchronization between `sps-seo-config.json` and `.sps/seo.json`.
+
+---
+
+## CI/CD Integration
+
+### GitHub Actions Quality Gate
+
+SPS SEO includes a GitHub Actions workflow that blocks PRs if the SEO score drops below 90/100:
+
+```yaml
+# .github/workflows/seo-check.yml
+name: SPS SEO Quality Gate
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  seo-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm test
+      - run: node scripts/audit.mjs --json
+      - run: node tests/test-phase2.mjs
+      - run: node scripts/validate-schema.mjs
+      - run: node scripts/internal-links.mjs
+      - name: Enforce SEO Quality Gate (Score >= 90)
+        run: |
+          if [ "$AUDIT_SCORE" -lt 90 ]; then
+            echo "SEO Quality Gate FAILED"
+            exit 1
+          fi
+```
+
+### Cross-Version CI Matrix
+
+```yaml
+# .github/workflows/ci-matrix.yml
+name: SPS SEO Cross-Version CI
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly regression
+
+jobs:
+  cross-version:
+    strategy:
+      matrix:
+        node-version: [18, 20, 22, 24]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: node --check scripts/*.mjs
+      - run: node tests/test-audit.mjs
+      - run: node tests/test-phase2.mjs
+```
+
+### Pre-Commit Hook
+
+Install a pre-commit hook that runs audit before each commit:
+
+```bash
+./scripts/setup-git-hook.sh
+```
+
+---
+
+## Testing
+
+### Run All Tests
+
+```bash
+npm test
+```
+
+### Run Core Tests Only
+
+```bash
+npm run test:core
+```
+
+### Run Phase 2 Tests Only
+
+```bash
+npm run test:phase2
+```
+
+### Test Results
+
+- **118 core assertions** — audit engine, scoring, parsing
+- **29 phase 2 assertions** — vertical SEO tools
+- **147 total assertions** — all passing
+
+---
+
+## Architecture
+
+### Directory Structure
+
+```
+sps-seo/
+├── scripts/                  # 47 CLI tools (zero dependencies)
+│   ├── audit.mjs            # Deterministic 100-point audit engine
+│   ├── fix.mjs              # Automated remediation
+│   ├── init.mjs             # Interactive config wizard
+│   ├── lib/
+│   │   └── core.mjs         # Shared utilities (VERSION, walkFiles, etc.)
+│   ├── install.sh           # Multi-agent installer
+│   ├── uninstall.sh         # Complete uninstaller
+│   ├── update.sh            # Auto-update from GitHub
+│   └── ...                  # 40+ specialized SEO tools
+├── hosts/                   # Agent-specific integration guides
+│   ├── claude.md
+│   ├── cursor.md
+│   ├── codex.md
+│   ├── windsurf.md
+│   ├── antigravity.md
+│   └── opencode.md
+├── adapters/                # Framework-specific playbooks
+│   ├── nextjs-app.md
+│   ├── nextjs-pages.md
+│   ├── astro.md
+│   ├── vite-react.md
+│   ├── static-html.md
+│   ├── wordpress.md
+│   ├── shopify.md
+│   ├── webflow.md
+│   ├── headless-cms.md
+│   └── universal-fallback.md
+├── schemas/                 # 17 JSON-LD schema templates
+│   ├── article.json
+│   ├── product.json
+│   ├── faq.json
+│   ├── local-business.json
+│   └── ...
+├── guides/                  # Deep-dive playbooks
+│   ├── aeo-geo-optimization.md
+│   ├── lighthouse-100-playbook.md
+│   ├── core-web-vitals-checklist.md
+│   └── ...
+├── tests/                   # Automated test suites
+│   ├── test-audit.mjs       # 118 core assertions
+│   └── test-phase2.mjs      # 29 vertical assertions
+├── .github/workflows/       # CI/CD workflows
+│   ├── seo-check.yml        # Quality gate (score >= 90)
+│   └── ci-matrix.yml        # Cross-version testing
+├── SKILL.md                 # AI agent skill definition
+├── SYSTEM-PROMPT.md         # Master system prompt
+├── METHOD-CARD.md           # 10 hard laws of SPS SEO
+├── PROMPTS.md               # Master prompts for every SEO task
+├── README.md                # This file
+├── VERSION                  # Current version (1.4.0)
+├── package.json             # npm scripts and bin
+└── LICENSE                  # MIT License
+```
+
+### Supported Frameworks
+
+| Framework | Detection | Adapter |
+|-----------|-----------|---------|
+| Next.js App Router | `app/layout.tsx`, `export const metadata` | [adapters/nextjs-app.md](adapters/nextjs-app.md) |
+| Next.js Pages Router | `pages/_app.tsx`, `next/head` | [adapters/nextjs-pages.md](adapters/nextjs-pages.md) |
+| Astro | `src/layouts/Layout.astro`, frontmatter | [adapters/astro.md](adapters/astro.md) |
+| Vite/React SPA | `index.html`, `react-helmet-async` | [adapters/vite-react.md](adapters/vite-react.md) |
+| Static HTML | Direct semantic `<head>` | [adapters/static-html.md](adapters/static-html.md) |
+| WordPress | `wp-content/` | [adapters/wordpress.md](adapters/wordpress.md) |
+| Shopify | `shopify.theme` | [adapters/shopify.md](adapters/shopify.md) |
+| Webflow | `webflow.css` | [adapters/webflow.md](adapters/webflow.md) |
+| Headless CMS | Sanity/Contentful/Strapi | [adapters/headless-cms.md](adapters/headless-cms.md) |
+| Universal Fallback | Any other project | [adapters/universal-fallback.md](adapters/universal-fallback.md) |
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+#### "Command not found: node"
+Install Node.js >= 18.0.0 from [nodejs.org](https://nodejs.org/)
+
+#### "Permission denied: ./scripts/install.sh"
+Make scripts executable:
+```bash
+chmod +x scripts/*.sh
+```
+
+#### "Could not check for updates"
+Check your internet connection or verify the repository URL:
+```bash
+SPS_SEO_REPO_URL=https://github.com/user/repo.git ./scripts/update.sh --check
+```
+
+#### "Score is 0/100 on empty project"
+This is correct behavior. An empty project has no SEO signals. Add content and run `fix.mjs` to scaffold missing files.
+
+#### "Deprecated entrypoint" warning
+Some old script names (like `keyword-check.mjs`) now forward to their canonical versions. This is expected and harmless.
+
+### Getting Help
+
+1. Check [PROMPTS.md](PROMPTS.md) for task-specific prompts
+2. Check [guides/](guides/) for deep-dive playbooks
+3. Check [hosts/](hosts/) for agent-specific instructions
+4. Run `node scripts/audit.mjs --help` for command options
+
+---
+
+## Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Run `npm test` to ensure all 147 assertions pass
+4. Submit a pull request
+
+---
+
+## License
 
 MIT License © 2026 Shahid
+
+---
+
+## Quick Reference Card
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     SPS SEO QUICK REFERENCE                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  INSTALL:                                                       │
+│    ./scripts/install.sh --global                                │
+│                                                                 │
+│  CONFIGURE:                                                     │
+│    node scripts/init.mjs                                        │
+│                                                                 │
+│  AUDIT:                                                         │
+│    node scripts/audit.mjs --json                                │
+│                                                                 │
+│  FIX:                                                           │
+│    node scripts/fix.mjs --apply                                 │
+│                                                                 │
+│  VERIFY:                                                        │
+│    node scripts/audit.mjs                                       │
+│                                                                 │
+│  UPDATE:                                                        │
+│    ./scripts/update.sh                                          │
+│                                                                 │
+│  UNINSTALL:                                                     │
+│    ./scripts/uninstall.sh                                       │
+│                                                                 │
+│  HELP:                                                          │
+│    node scripts/cli.mjs help                                    │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```

@@ -19,6 +19,9 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { analyzeTfIdf } from './tfidf-analyzer.mjs';
+import { captureConsole } from './lib/core.mjs';
 
 const CWD = process.cwd();
 
@@ -199,6 +202,16 @@ export function runTfidfAudit(options = {}) {
     thinPages,
     findings
   };
+
+// [v1.4 composed] Merge the deprecated standalone companion engine into this unified report.
+  try {
+    const jsonMode = options.json || process.argv.includes('--json');
+    result.companion = jsonMode
+      ? captureConsole(() => analyzeTfIdf({ json: true })).result
+      : analyzeTfIdf({});
+  } catch (e) {
+    result.companion = { error: e.message };
+  }
 
   if (options.json || process.argv.includes('--json')) {
     console.log(JSON.stringify(result, null, 2));
@@ -393,6 +406,6 @@ function printConsole(result) {
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   runTfidfAudit();
 }

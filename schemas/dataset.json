@@ -1,0 +1,25 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  "name": "{{DATASET_NAME}}",
+  "description": "{{DATASET_DESCRIPTION}}",
+  "url": "{{DATASET_URL}}",
+  "sameAs": "{{DATASET_LANDING_PAGE}}",
+  "keywords": [
+    "{{KEYWORD_1}}",
+    "{{KEYWORD_2}}"
+  ],
+  "creator": {
+    "@type": "Organization",
+    "url": "{{SITE_URL}}",
+    "name": "{{SITE_NAME}}"
+  },
+  "distribution": [
+    {
+      "@type": "DataDownload",
+      "encodingFormat": "CSV",
+      "contentUrl": "{{DOWNLOAD_URL}}"
+    }
+  ],
+  "license": "https://creativecommons.org/licenses/by/4.0/"
+}

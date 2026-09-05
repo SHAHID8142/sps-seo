@@ -1,6 +1,6 @@
 # METHOD-CARD: SPS SEO Engine
 
-**Version:** 1.0.0  
+**Version:** 1.4.0  
 **Domain:** All-in-One Autonomous Technical & On-Page SEO Architecture  
 **Compatibility:** Next.js (App & Pages), Astro, Vite/React SPA, Static HTML, Nuxt, SvelteKit, Laravel, Django.
 
@@ -44,7 +44,7 @@
 - Verify that multiple routes are not competing for the exact same target keywords or using duplicate `<title>`/`<meta description>` tags (`scripts/cannibalization.mjs`).
 
 ### Law 8: Enterprise Security, Secret Protection & Web Best Practices
-- Zero hardcoded secrets, private keys, or exposed `.env` files in `public/` directories (`scripts/security-check.mjs`).
+- Zero hardcoded secrets, private keys, or exposed `.env` files in `public/` directories (`scripts/security-audit.mjs`).
 - Configure essential HTTP security headers (`Strict-Transport-Security`, `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`).
 - Prevent reverse tabnabbing on all external links (`rel="noopener noreferrer"`).
 - Never lock viewport zoom (`user-scalable=no` or `maximum-scale=1` prohibited).
@@ -97,7 +97,7 @@ A project is only certified "SPS SEO Compliant" when:
 7. Asset budget meets low-end mobile limits (≤ 1.5MB total payload, images ≤ 200KB).
 8. Valid `sitemap.xml`, `robots.txt`, and `llms.txt` are generated.
 9. Branded `og-image.svg` and `seo-score-badge.svg` are generated.
-10. Zero critical secret leaks or exposed files in public directories (`scripts/security-check.mjs`).
+10. Zero critical secret leaks or exposed files in public directories (`scripts/security-audit.mjs`).
 11. Target keyword density is optimal (1.0%–2.5%) and prominent in Title, H1, and first 100 words (`scripts/keyword-check.mjs`).
 12. Zero redirect chains, loops, or link equity leakage on permanent URLs (`scripts/redirect-audit.mjs`).
 13. `sps-seo-audit-report.md` (and `.sps/seo-audit.md` if applicable) is updated.

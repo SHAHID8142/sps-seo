@@ -14,6 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { runAudit } from './audit.mjs';
+import { fileURLToPath } from 'node:url';
 
 const CWD = process.cwd();
 
@@ -161,7 +162,7 @@ Sitemap: ${baseUrl.replace(/\/$/, '')}/sitemap.xml
   }
 
   // 5. Scan and patch image alt attributes in files
-  const fileExts = ['.html', '.astro', '.tsx', '.jsx', '.vue', '.svelte'];
+  const fileExts = ['.html', '.astro', '.tsx', '.jsx', '.vue', '.svelte', '.md', '.mdx'];
   const IGNORED = ['node_modules', '.git', '.next', 'dist', 'build'];
 
   function walk(dir) {
@@ -264,7 +265,7 @@ Sitemap: ${baseUrl.replace(/\/$/, '')}/sitemap.xml
   return { applied: actions.length, actions };
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   const isApply = process.argv.includes('--apply');
   runAutoFix({ dryRun: !isApply }).catch(err => {
     console.error('AutoFix execution error:', err);

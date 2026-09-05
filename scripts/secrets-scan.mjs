@@ -17,6 +17,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const CWD = process.cwd();
 
@@ -255,6 +256,6 @@ function printConsole(result) {
   console.log('');
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   runSecretsScan();
 }

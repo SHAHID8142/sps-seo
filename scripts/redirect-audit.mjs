@@ -19,6 +19,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const CWD = process.cwd();
 
@@ -28,7 +29,7 @@ const IGNORE_DIRS = new Set([
   '.sps', '.agents', 'public'
 ]);
 
-const SCAN_EXTS = new Set(['.html', '.htm', '.astro', '.tsx', '.jsx', '.vue', '.svelte']);
+const SCAN_EXTS = new Set(['.html', '.htm', '.astro', '.tsx', '.jsx', '.vue', '.svelte', '.md', '.mdx']);
 
 // next.config / astro.config / vercel.json / netlify.toml patterns we recognize
 const CONFIG_FILES = ['next.config.js', 'next.config.mjs', 'next.config.ts',
@@ -498,7 +499,7 @@ function printConsole(result) {
 
 export const auditRedirects = runRedirectAudit;
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   runRedirectAudit().catch(err => {
     console.error('Redirect audit error:', err);
     process.exit(1);

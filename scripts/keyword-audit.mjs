@@ -24,6 +24,9 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { analyzeKeywords } from './keyword-check.mjs';
+import { captureConsole } from './lib/core.mjs';
 
 const CWD = process.cwd();
 
@@ -33,7 +36,7 @@ const IGNORE_DIRS = new Set([
   '.sps', '.agents', 'public'
 ]);
 
-const SCAN_EXTS = new Set(['.html', '.htm', '.astro', '.tsx', '.jsx', '.vue', '.svelte']);
+const SCAN_EXTS = new Set(['.html', '.htm', '.astro', '.tsx', '.jsx', '.vue', '.svelte', '.md', '.mdx']);
 
 const STUFFING_DENSITY = 0.05; // 5%
 const THIN_CONTENT_WORDS = 100;
@@ -161,6 +164,16 @@ export function runKeywordAudit(options = {}) {
     keywordMatrix,
     findings
   };
+
+// [v1.4 composed] Merge the deprecated standalone companion engine into this unified report.
+  try {
+    const jsonMode = options.json || process.argv.includes('--json');
+    result.companion = jsonMode
+      ? captureConsole(() => analyzeKeywords({ json: true })).result
+      : analyzeKeywords({});
+  } catch (e) {
+    result.companion = { error: e.message };
+  }
 
   if (options.json || process.argv.includes('--json')) {
     console.log(JSON.stringify(result, null, 2));
@@ -312,6 +325,6 @@ function printConsole(result) {
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   runKeywordAudit();
 }

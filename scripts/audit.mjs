@@ -2,7 +2,7 @@
 
 /**
  * SPS SEO Deterministic Audit Engine
- * Version: 1.0.0
+ * Version: 1.4.0
  * 
  * Zero-dependency Node.js ESM scanner for framework detection, AST/HTML parsing,
  * heading hierarchy analysis, alt attribute validation, metadata verification,
@@ -11,6 +11,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { extractHtmlHeadings } from './lib/core.mjs';
 
 const CWD = process.cwd();
 
@@ -95,7 +97,7 @@ function detectFramework(projectDir) {
 }
 
 // 2. Discover Source Files
-function collectFiles(dir, exts = ['.html', '.htm', '.astro', '.tsx', '.jsx', '.vue', '.svelte']) {
+function collectFiles(dir, exts = ['.html', '.htm', '.astro', '.tsx', '.jsx', '.vue', '.svelte', '.md', '.mdx']) {
   const results = [];
 
   function walk(currentDir) {
@@ -129,15 +131,28 @@ function collectFiles(dir, exts = ['.html', '.htm', '.astro', '.tsx', '.jsx', '.
 function analyzeContent(filePath, content) {
   const relPath = path.relative(CWD, filePath);
   const ext = path.extname(filePath).toLowerCase();
+  const isMarkdown = ext === '.md' || ext === '.mdx';
+  // Strip fenced code blocks before analysis so `#` comments in code
+  // samples are never misread as markdown headings.
+  const proseContent = isMarkdown ? content.replace(/```[\s\S]*?```/g, '') : content;
 
-  // Heading analysis
-  const headingRegex = /<h([1-6])[\s>]([\s\S]*?)<\/h\1>/gi;
-  const headings = [];
+  // Heading analysis (HTML tags + markdown ATX headings)
   let match;
-  while ((match = headingRegex.exec(content)) !== null) {
-    const level = parseInt(match[1], 10);
-    const text = match[2].replace(/<[^>]+>/g, '').trim();
-    headings.push({ level, text, line: content.slice(0, match.index).split('\n').length });
+  const headings = [];
+  if (isMarkdown) {
+    const mdHeadingRegex = /^(#{1,6})\s+(.+?)\s*$/gm;
+    while ((match = mdHeadingRegex.exec(proseContent)) !== null) {
+      headings.push({
+        level: match[1].length,
+        text: match[2].replace(/[*_`]/g, '').trim(),
+        line: proseContent.slice(0, match.index).split('\n').length
+      });
+    }
+  } else {
+    const headingMatches = extractHtmlHeadings(content, { minLevel: 1, maxLevel: 6 });
+    for (const hm of headingMatches) {
+      headings.push({ level: hm.level, text: hm.text, line: hm.line });
+    }
   }
 
   // Heading hierarchy validation
@@ -160,6 +175,19 @@ function analyzeContent(filePath, content) {
   let emptyAlt = 0;
   const imageDetails = [];
 
+  if (isMarkdown) {
+    // Markdown images: ![alt](src) — empty alt is always a defect
+    const mdImgRegex = /!\[([^\]]*)\]\(([^)\s]+)/g;
+    while ((match = mdImgRegex.exec(proseContent)) !== null) {
+      totalImages++;
+      const alt = match[1].trim();
+      const src = match[2];
+      if (alt === '') {
+        emptyAlt++;
+        imageDetails.push({ src, status: 'empty', line: proseContent.slice(0, match.index).split('\n').length });
+      }
+    }
+  }
   while ((match = imgRegex.exec(content)) !== null) {
     totalImages++;
     const attrs = match[1];
@@ -184,19 +212,44 @@ function analyzeContent(filePath, content) {
   const hasNextMetadata = /export\s+const\s+metadata\s*(?::\s*Metadata)?\s*=\s*{/i.test(content) ||
                           /export\s+async\s+function\s+generateMetadata/i.test(content);
 
-  const titleMatch = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(content) ||
-                     /title:\s*["'`]([^"'`]+)["'`]/i.exec(content);
-  const title = titleMatch ? titleMatch[1].trim() : null;
+  // NOTE: fallback object-literal matches are anchored to real metadata
+  // contexts (export const metadata / generateMetadata) so that unrelated
+  // JS object keys like `document.title = '...'` or i18n dictionaries
+  // never produce false positives.
+  const METADATA_CONTEXT = '(?:export\\s+const\\s+metadata|export\\s+async\\s+function\\s+generateMetadata)';
 
-  const descMatch = /<meta\s+name=["']description["']\s+content=["']([\s\S]*?)["']/i.exec(content) ||
-                    /<meta\s+content=["']([\s\S]*?)["']\s+name=["']description["']/i.exec(content) ||
-                    /description:\s*["'`]([^"'`]+)["'`]/i.exec(content);
-  const description = descMatch ? descMatch[1].trim() : null;
+  let title = null;
+  let description = null;
+  let canonical = null;
 
-  const canonicalMatch = /<link\s+rel=["']canonical["']\s+href=["']([\s\S]*?)["']/i.exec(content) ||
-                         /<link\s+href=["']([\s\S]*?)["']\s+rel=["']canonical["']/i.exec(content) ||
-                         /canonical:\s*["'`]([^"'`]+)["'`]/i.exec(content);
-  const canonical = canonicalMatch ? canonicalMatch[1].trim() : null;
+  if (isMarkdown) {
+    // Markdown frontmatter (YAML) is the canonical source for md/mdx pages
+    const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(content);
+    if (fm) {
+      const t = /^title:\s*["']?(.+?)["']?\s*$/m.exec(fm[1]);
+      const d = /^description:\s*["']?(.+?)["']?\s*$/m.exec(fm[1]);
+      if (t) title = t[1].trim();
+      if (d) description = d[1].trim();
+    }
+    if (!title) {
+      const h1 = headings.find(h => h.level === 1);
+      if (h1) title = h1.text;
+    }
+  } else {
+    const titleMatch = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(content) ||
+                       new RegExp(`${METADATA_CONTEXT}[\\s\\S]{0,800}?title:\\s*["'\`]([^"'\`]+)["'\`]`, 'i').exec(content);
+    title = titleMatch ? titleMatch[1].trim() : null;
+
+    const descMatch = /<meta\s+name=["']description["']\s+content=["']([\s\S]*?)["']/i.exec(content) ||
+                      /<meta\s+content=["']([\s\S]*?)["']\s+name=["']description["']/i.exec(content) ||
+                      new RegExp(`${METADATA_CONTEXT}[\\s\\S]{0,800}?description:\\s*["'\`]([^"'\`]+)["'\`]`, 'i').exec(content);
+    description = descMatch ? descMatch[1].trim() : null;
+
+    const canonicalMatch = /<link\s+rel=["']canonical["']\s+href=["']([\s\S]*?)["']/i.exec(content) ||
+                           /<link\s+href=["']([\s\S]*?)["']\s+rel=["']canonical["']/i.exec(content) ||
+                           new RegExp(`${METADATA_CONTEXT}[\\s\\S]{0,800}?canonical:\\s*["'\`]([^"'\`]+)["'\`]`, 'i').exec(content);
+    canonical = canonicalMatch ? canonicalMatch[1].trim() : null;
+  }
 
   // OpenGraph checks
   const ogTitle = /property=["']og:title["']/i.test(content) || /openGraph:\s*{[\s\S]*?title:/i.test(content);
@@ -452,6 +505,13 @@ export async function runAudit(options = {}) {
     cat1Score = Math.max(0, cat1Score - Math.min(18, aiBotPolicy.blockedCitationBots.length * 6));
   }
 
+  // Empty-project guard: with zero pages analyzed there is nothing to
+  // reward — every category scores 0 so a bare folder can never earn
+  // free points (previously an empty repo scored 19/100).
+  if (analyses.length === 0) {
+    cat1Score = 0; cat2Score = 0; cat3Score = 0; cat4Score = 0;
+  }
+
   const totalScore = Math.min(100, Math.max(0, cat1Score + cat2Score + cat3Score + cat4Score));
 
   let grade = 'F';
@@ -693,7 +753,7 @@ function analyzeAiBotPolicy(robotsPath) {
 }
 
 // Auto-run if executed directly
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   runAudit().catch(err => {
     console.error('Audit execution error:', err);
     process.exit(1);

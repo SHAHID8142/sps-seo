@@ -13,6 +13,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const CWD = process.cwd();
 
@@ -46,7 +47,7 @@ export function extractHreflangTags(content, filePath) {
 
 export function validateI18n(options = {}) {
   const projectDir = options.cwd || CWD;
-  const fileExts = ['.html', '.astro', '.tsx', '.jsx', '.vue', '.svelte'];
+  const fileExts = ['.html', '.astro', '.tsx', '.jsx', '.vue', '.svelte', '.md', '.mdx'];
   const IGNORED = ['node_modules', '.git', '.next', 'dist', 'build'];
 
   const pagesWithHreflang = new Map(); // pageUrl/file -> tags[]
@@ -173,6 +174,6 @@ export function validateI18n(options = {}) {
   return result;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   validateI18n();
 }

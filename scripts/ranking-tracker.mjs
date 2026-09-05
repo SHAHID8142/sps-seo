@@ -21,6 +21,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const CWD = process.cwd();
 
@@ -238,7 +239,7 @@ function printSummary(summary, mode) {
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   runRankingTracker().catch(err => {
     console.error('Ranking tracker error:', err);
     process.exit(1);

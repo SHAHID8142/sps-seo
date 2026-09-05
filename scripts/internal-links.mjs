@@ -13,6 +13,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const CWD = process.cwd();
 
@@ -48,7 +49,7 @@ function discoverRoutes(projectDir) {
         const name = path.basename(e.name, ext);
         if (name === 'page' && ['.tsx', '.jsx', '.ts', '.js'].includes(ext)) {
           routes.add((base || '/').replace(/\/+/g, '/'));
-        } else if (['.astro', '.tsx', '.jsx', '.html', '.vue', '.svelte'].includes(ext)) {
+        } else if (['.astro', '.tsx', '.jsx', '.html', '.vue', '.svelte', '.md', '.mdx'].includes(ext)) {
           if (IGNORE.includes(name) || name.startsWith('_') || name.startsWith('.')) continue;
           const r = name === 'index' ? (base || '/') : `${base}/${name}`;
           routes.add(r.replace(/\/+/g, '/'));
@@ -109,7 +110,7 @@ export function analyzeInternalLinks(options = {}) {
   const knownRoutes = discoverRoutes(projectDir);
   const routeSet = new Set(knownRoutes);
 
-  const fileExts = ['.html', '.astro', '.tsx', '.jsx', '.vue', '.svelte'];
+  const fileExts = ['.html', '.astro', '.tsx', '.jsx', '.vue', '.svelte', '.md', '.mdx'];
   const IGNORED = ['node_modules', '.git', '.next', 'dist', 'build'];
 
   const allLinks = [];
@@ -228,6 +229,6 @@ export function analyzeInternalLinks(options = {}) {
   return result;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   analyzeInternalLinks();
 }

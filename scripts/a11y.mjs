@@ -23,6 +23,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { extractHtmlHeadings } from './lib/core.mjs';
 
 const CWD = process.cwd();
 
@@ -32,7 +34,7 @@ const IGNORE_DIRS = new Set([
   '.sps', '.agents', 'public'
 ]);
 
-const TEMPLATE_EXTS = new Set(['.html', '.htm', '.astro', '.tsx', '.jsx', '.vue', '.svelte']);
+const TEMPLATE_EXTS = new Set(['.html', '.htm', '.astro', '.tsx', '.jsx', '.vue', '.svelte', '.md', '.mdx']);
 
 const VALID_ARIA_ROLES = new Set([
   'alert', 'alertdialog', 'application', 'article', 'banner', 'button',
@@ -316,7 +318,8 @@ function auditFile(fullPath, findings, stats, penalize) {
     const closeMatch = closeRegex.exec(stripped.slice(m.index));
     if (!closeMatch) continue;
     const inner = stripped.slice(m.index + openTag.length, m.index + closeMatch.index);
-    if (/\b(?:tabindex\s*=\s*["'][^"']*["']|<(?:a|button|input|select|textarea)\b)/i.test(inner)) {
+    if (/\b(?:tabindex\s*=\s*["'][^"']*["']|<(?:a|button|input|select|textarea)\b)/i.test(inner) ||
+        /<(?:a|button|input|select|textarea)[\s>]/i.test(inner)) {
       stats.ariaHiddenFocusable++;
       penalize(8, 'high');
     }
@@ -339,12 +342,9 @@ function auditFile(fullPath, findings, stats, penalize) {
     penalize(posTabs.length * 2, 'medium');
   }
 
-  // 9. h1 + heading order
-  const hRegex = /<(h[1-6])\b[^>]*>([\s\S]*?)<\/\1>/gi;
-  const headings = [];
-  while ((m = hRegex.exec(stripped)) !== null) {
-    headings.push({ level: parseInt(m[1][1], 10) });
-  }
+  // 9. h1 + heading order (backref-free pairing — V8-safe)
+  const headingMatches = extractHtmlHeadings(stripped, { minLevel: 1, maxLevel: 6 });
+  const headings = headingMatches.map(h => ({ level: h.level }));
   const h1Count = headings.filter(h => h.level === 1).length;
   if (h1Count !== 1) {
     stats.h1Issues++;
@@ -409,6 +409,6 @@ function printConsole(result) {
   console.log('');
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   runA11yAudit();
 }

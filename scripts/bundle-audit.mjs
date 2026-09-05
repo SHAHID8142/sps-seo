@@ -20,6 +20,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const CWD = process.cwd();
 
@@ -29,7 +30,7 @@ const IGNORE_DIRS = new Set([
   '.sps', '.agents', 'public'
 ]);
 
-const TEMPLATE_EXTS = new Set(['.html', '.htm', '.astro', '.tsx', '.jsx', '.vue', '.svelte']);
+const TEMPLATE_EXTS = new Set(['.html', '.htm', '.astro', '.tsx', '.jsx', '.vue', '.svelte', '.md', '.mdx']);
 
 const THIRD_PARTY_DOMAINS = [
   'googletagmanager.com',
@@ -322,6 +323,6 @@ function printConsole(result) {
   console.log('');
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   runBundleAudit();
 }

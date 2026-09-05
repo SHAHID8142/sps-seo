@@ -12,6 +12,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { extractHtmlHeadings } from './lib/core.mjs';
 
 const CWD = process.cwd();
 
@@ -41,19 +43,17 @@ export function parsePageHtml(html, sourceUrl) {
                     /<meta\s+content=["']([\s\S]*?)["']\s+name=["']description["']/i.exec(html);
   const description = descMatch ? descMatch[1].trim() : 'None';
 
-  // Headings
+  // Headings (backref-free pairing — V8-safe)
   const headings = [];
-  const hRegex = /<(h[1-3])\b[^>]*>([\s\S]*?)<\/\1>/gi;
-  let match;
-  while ((match = hRegex.exec(html)) !== null) {
-    const level = match[1].toUpperCase();
-    const text = match[2].replace(/<[^>]+>/g, '').trim();
-    if (text) headings.push({ level, text });
+  for (const hm of extractHtmlHeadings(html, { minLevel: 1, maxLevel: 3 })) {
+    const level = 'H' + hm.level;
+    if (hm.text) headings.push({ level, text: hm.text });
   }
 
   // Schema types
   const schemaTypes = new Set();
   const schemaRegex = /"@type"\s*:\s*["']([^"']+)["']/g;
+  let match;
   while ((match = schemaRegex.exec(html)) !== null) {
     schemaTypes.add(match[1]);
   }
@@ -135,7 +135,7 @@ export async function analyzeCompetitors(options = {}) {
 
   // Scan local project headings for gap comparison
   const localHeadings = new Set();
-  const fileExts = ['.html', '.astro', '.tsx', '.jsx', '.vue', '.svelte'];
+  const fileExts = ['.html', '.astro', '.tsx', '.jsx', '.vue', '.svelte', '.md', '.mdx'];
   function walk(dir) {
     if (!fs.existsSync(dir)) return;
     const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -146,10 +146,9 @@ export async function analyzeCompetitors(options = {}) {
       else if (e.isFile() && fileExts.includes(path.extname(e.name))) {
         try {
           const content = fs.readFileSync(full, 'utf8');
-          const hMatch = /<(h[1-3])\b[^>]*>([\s\S]*?)<\/\1>/gi;
-          let m;
-          while ((m = hMatch.exec(content)) !== null) {
-            localHeadings.add(m[2].replace(/<[^>]+>/g, '').trim().toLowerCase());
+          const hMatch = extractHtmlHeadings(content, { minLevel: 1, maxLevel: 3 });
+          for (const hm of hMatch) {
+            if (hm.text) localHeadings.add(hm.text.toLowerCase());
           }
         } catch {
           // ignore
@@ -226,7 +225,7 @@ function generateMarkdownReport(report) {
   return md;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   analyzeCompetitors().catch(err => {
     console.error('Competitor analysis error:', err);
     process.exit(1);

@@ -714,6 +714,12 @@ ${result.templates.missingSriScripts.map(s => `- ⚠️ \`${s.src}\` in \`${s.fi
 
 // Auto-run if executed directly
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
-  const isJson = process.argv.includes('--json');
-  scanSecurityAndBestPractices({ json: isJson });
+  // [v1.4 deprecated] Forward to the canonical unified entrypoint
+  console.warn('⚠️  Deprecated entrypoint: security-check.mjs is now composed into ./security-audit.mjs. Forwarding...\n');
+  const { spawnSync } = await import('node:child_process');
+  const res = spawnSync(process.execPath, [
+    path.join(path.dirname(fileURLToPath(import.meta.url)), 'security-audit.mjs'),
+    ...process.argv.slice(2)
+  ], { stdio: 'inherit' });
+  process.exit(res.status ?? 0);
 }

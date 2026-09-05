@@ -29,6 +29,7 @@ import { runBundleAudit } from './bundle-audit.mjs';
 import { runSnippetAudit } from './snippet-audit.mjs';
 import { runKeywordAudit } from './keyword-audit.mjs';
 import { runTfidfAudit } from './tfidf.mjs';
+import { fileURLToPath } from 'node:url';
 
 const CWD = process.cwd();
 
@@ -333,7 +334,7 @@ function renderMarkdown(c) {
 
 export const compareSeo = runSeoCompare;
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   runSeoCompare().catch(err => {
     console.error('SEO compare error:', err);
     process.exit(1);

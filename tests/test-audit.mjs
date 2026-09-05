@@ -30,6 +30,14 @@ import { optimizeSnippets } from '../scripts/snippet-optimizer.mjs';
 import { auditRedirects } from '../scripts/redirect-audit.mjs';
 import { analyzeBacklinks } from '../scripts/backlink-intel.mjs';
 import { compareSeo } from '../scripts/seo-compare.mjs';
+import { runSecurityAudit } from '../scripts/security-audit.mjs';
+import { runA11yAudit } from '../scripts/a11y.mjs';
+import { runBundleAudit } from '../scripts/bundle-audit.mjs';
+import { runSnippetAudit } from '../scripts/snippet-audit.mjs';
+import { runKeywordAudit } from '../scripts/keyword-audit.mjs';
+import { runTfidfAudit } from '../scripts/tfidf.mjs';
+import { runBacklinkAudit } from '../scripts/backlink-audit.mjs';
+import { runSecretsScan } from '../scripts/secrets-scan.mjs';
 
 function createTempDir(prefix) {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -624,6 +632,235 @@ async function runTests() {
   } finally {
     cleanupDir(dirA);
     cleanupDir(dirB);
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // v1.2.0 / v1.3.0 NEW SCRIPT TESTS
+  // ─────────────────────────────────────────────────────────────────
+
+  // TEST 23: Redirect Audit
+  const redirNewDir = createTempDir('sps-seo-test-redir2-');
+  try {
+    console.log('\nTest 23: Redirect & Canonical Audit');
+    fs.writeFileSync(path.join(redirNewDir, 'vercel.json'), JSON.stringify({
+      redirects: [
+        { source: '/old', destination: '/new', permanent: true },
+        { source: '/temp', destination: '/target', permanent: false },
+        { source: '/chain1', destination: '/chain2', permanent: true },
+        { source: '/chain2', destination: '/chain3', permanent: true },
+      ]
+    }, null, 2));
+    fs.writeFileSync(path.join(redirNewDir, 'index.html'), `<html><body><a href="#section">Jump</a><a href="#">Dead</a><a href="javascript:void(0)">JS</a></body></html>`);
+    const redirResult = await auditRedirects({ cwd: redirNewDir, json: true });
+    assert(redirResult.configRedirectCount === 4, 'Parsed 4 redirect rules');
+    assert(redirResult.findings.some(f => f.msg.includes('Temporary redirect')), 'Flagged 302/307 temp redirect');
+    assert(redirResult.findings.some(f => f.msg.includes('chain')), 'Detected multi-hop redirect chain');
+    assert(redirResult.stats.deadHrefs >= 1, 'Detected dead hrefs (#, javascript:)');
+  } finally {
+    cleanupDir(redirNewDir);
+  }
+
+  // TEST 24: TF-IDF Keyword Coverage
+  const tfidfNewDir = createTempDir('sps-seo-test-tfidf2-');
+  try {
+    console.log('\nTest 24: TF-IDF & Keyword Coverage');
+    fs.writeFileSync(path.join(tfidfNewDir, 'sps-seo-config.json'), JSON.stringify({
+      metadata: {
+        keywords: ['cloud compute', 'distributed systems'],
+        secondaryKeywords: ['edge latency']
+      }
+    }));
+    fs.writeFileSync(path.join(tfidfNewDir, 'index.html'), `
+      <html><head><title>Cloud Compute Guide</title>
+      <meta name="description" content="Cloud compute infrastructure for distributed systems and edge latency.">
+      </head>
+      <body>
+        <main>
+          <h1>Cloud Compute</h1>
+          <p>Cloud compute powers distributed systems. Reduce edge latency with cloud compute infrastructure designed for production.</p>
+        </main>
+      </body></html>
+    `);
+    const tfidfResult = runTfidfAudit({ cwd: tfidfNewDir, json: true });
+    assert(tfidfResult.pagesAnalyzed === 1, 'Analyzed 1 page');
+    assert(tfidfResult.keywordReport.length === 3, 'Computed coverage for all 3 target keywords');
+    assert(tfidfResult.keywordReport.some(k => k.keyword === 'cloud compute'), 'Tracked primary keyword "cloud compute"');
+  } finally {
+    cleanupDir(tfidfNewDir);
+  }
+
+  // TEST 25: Featured Snippet Eligibility Audit
+  const snipDir = createTempDir('sps-seo-test-snip2-');
+  try {
+    console.log('\nTest 25: Featured Snippet Eligibility');
+    fs.writeFileSync(path.join(snipDir, 'index.html'), `
+      <html><body>
+        <h2>What is cloud compute?</h2>
+        <p>Cloud compute is an on-demand infrastructure delivery model that provides scalable virtual servers, containerized workloads, high-speed storage, and raw processing power over secure global networks without requiring local hardware or upfront capital expenditure for any growing business today.</p>
+        <ol><li>Configure</li><li>Deploy</li><li>Scale</li></ol>
+        <table><thead><tr><th>Feature</th></tr></thead><tbody><tr><td>X</td></tr></tbody></table>
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Q1","acceptedAnswer":{"@type":"Answer","text":"A1"}}]}</script>
+      </body></html>
+    `);
+    const snipResult = runSnippetAudit({ cwd: snipDir, json: true });
+    assert(snipResult.aggregate.totalQuestionHeadings >= 1, 'Detected question-shaped heading');
+    assert(snipResult.aggregate.totalParagraphSnippets >= 1, 'Detected paragraph snippet');
+    assert(snipResult.aggregate.totalListSnippets >= 1, 'Detected list snippet');
+    assert(snipResult.aggregate.totalTableSnippets >= 1, 'Detected table snippet');
+    assert(snipResult.aggregate.pagesWithFaqSchema === 1, 'Detected FAQPage schema');
+  } finally {
+    cleanupDir(snipDir);
+  }
+
+  // TEST 26: Keyword Placement Audit
+  const kwDir2 = createTempDir('sps-seo-test-kw2-');
+  try {
+    console.log('\nTest 26: Keyword Placement Audit');
+    fs.writeFileSync(path.join(kwDir2, 'sps-seo-config.json'), JSON.stringify({
+      metadata: {
+        keywords: ['cloud compute'],
+        secondaryKeywords: ['distributed systems']
+      }
+    }));
+    fs.writeFileSync(path.join(kwDir2, 'index.html'), `
+      <html><head>
+        <title>Cloud Compute Platform | Acme</title>
+        <meta name="description" content="Cloud compute platform for distributed systems.">
+      </head>
+      <body><main>
+        <h1>Cloud Compute</h1>
+        <p>Our cloud compute platform powers distributed systems at scale. Cloud compute is the foundation of modern infrastructure. Cloud compute cloud compute cloud compute cloud compute cloud compute cloud compute cloud compute cloud compute cloud compute cloud compute cloud compute.</p>
+      </main></body></html>
+    `);
+    const kwResult = runKeywordAudit({ cwd: kwDir2, json: true });
+    assert(kwResult.pagesAnalyzed === 1, 'Analyzed 1 page');
+    assert(kwResult.keywordMatrix.length === 2, 'Tracked 2 target keywords');
+    const ckEntry = kwResult.keywordMatrix.find(k => k.keyword === 'cloud compute');
+    assert(ckEntry, 'Tracked primary keyword "cloud compute"');
+    assert(ckEntry.perPage[0].placements.inTitle, 'Detected keyword in title');
+    assert(ckEntry.perPage[0].placements.inH1, 'Detected keyword in H1');
+    assert(ckEntry.perPage[0].stuffing, 'Detected keyword stuffing');
+  } finally {
+    cleanupDir(kwDir2);
+  }
+
+  // TEST 27: Bundle & Render-Blocking Audit
+  const bundleDir = createTempDir('sps-seo-test-bundle-');
+  try {
+    console.log('\nTest 27: Bundle & Render-Blocking Audit');
+    fs.writeFileSync(path.join(bundleDir, 'index.html'), `
+      <html><head>
+        <link rel="stylesheet" href="/styles.css">
+        <script src="https://googletagmanager.com/gtag/js?id=G-XXX"></script>
+        <script src="/app.js"></script>
+        <script src="http://insecure.example.com/lib.js"></script>
+      </head>
+      <body><img src="/hero.jpg"><button onclick="foo()">X</button></body></html>
+    `);
+    const bundleResult = runBundleAudit({ cwd: bundleDir, json: true });
+    assert(bundleResult.stats.renderBlockingScripts > 0, 'Detected render-blocking scripts');
+    assert(bundleResult.stats.renderBlockingStylesheets > 0, 'Detected render-blocking CSS');
+    assert(bundleResult.stats.mixedContentScripts > 0, 'Detected mixed-content script');
+    assert(bundleResult.stats.thirdPartyScripts.length > 0, 'Detected third-party scripts');
+    assert(bundleResult.stats.inlineHandlers > 0, 'Detected inline event handlers');
+  } finally {
+    cleanupDir(bundleDir);
+  }
+
+  // TEST 28: Accessibility Audit
+  const a11yDir = createTempDir('sps-seo-test-a11y-');
+  try {
+    console.log('\nTest 28: WCAG 2.2 AA Accessibility Audit');
+    fs.writeFileSync(path.join(a11yDir, 'index.html'), `
+      <html>
+        <head><title>A11y Test</title></head>
+        <body>
+          <main>
+            <h1>Heading</h1>
+            <h3>Skipped level</h3>
+            <button></button>
+            <input type="text" />
+            <a target="_blank" href="https://example.com">External</a>
+            <img src="/x.jpg">
+            <div aria-hidden="true"><a href="/foo">Hidden but focusable</a></div>
+            <div role="notarealrole">Invalid role</div>
+          </main>
+        </body>
+      </html>
+    `);
+    const a11yResult = runA11yAudit({ cwd: a11yDir, json: true });
+    assert(a11yResult.stats.htmlLangMissing >= 1, 'Flagged missing html lang');
+    assert(a11yResult.stats.skippedHeadings >= 1, 'Flagged skipped heading level');
+    assert(a11yResult.stats.unlabeledButtons >= 1, 'Flagged empty button');
+    assert(a11yResult.stats.unlabeledInputs >= 1, 'Flagged unlabeled input');
+    assert(a11yResult.stats.altMissing >= 1, 'Flagged missing alt');
+    assert(a11yResult.stats.targetBlankInsecure >= 1, 'Flagged insecure target=_blank');
+    assert(a11yResult.stats.invalidAriaRole >= 1, 'Flagged invalid ARIA role');
+    assert(a11yResult.stats.ariaHiddenFocusable >= 1, 'Flagged aria-hidden with focusable descendant');
+  } finally {
+    cleanupDir(a11yDir);
+  }
+
+  // TEST 29: Security Audit (static)
+  const secNewDir = createTempDir('sps-seo-test-sec2-');
+  try {
+    console.log('\nTest 29: Security & Hardening Audit (Static)');
+    fs.mkdirSync(path.join(secNewDir, 'public'), { recursive: true });
+    fs.writeFileSync(path.join(secNewDir, 'public/.env.local'), 'LEAK=secret');
+    fs.writeFileSync(path.join(secNewDir, 'index.html'), `
+      <html><body>
+        <div dangerouslySetInnerHTML={{__html: userInput}} />
+        <script>eval(userCode);</script>
+        <script>new Function(code)();</script>
+        <img src="http://insecure.example.com/x.jpg">
+      </body></html>
+    `);
+    const secResult = await runSecurityAudit({ cwd: secNewDir, json: true });
+    assert(secResult.findings.some(f => f.category === 'exposed-file' && f.severity === 'critical'), 'Detected critical exposed .env.local');
+    assert(secResult.findings.some(f => f.category === 'xss-sink' && f.msg.includes('dangerouslySetInnerHTML')), 'Detected React dangerouslySetInnerHTML');
+    assert(secResult.findings.some(f => f.category === 'eval-sink' && f.msg.includes('eval')), 'Detected eval()');
+    assert(secResult.findings.some(f => f.category === 'eval-sink' && f.msg.includes('Function')), 'Detected new Function()');
+    assert(secResult.findings.some(f => f.category === 'mixed-content'), 'Detected mixed content');
+  } finally {
+    cleanupDir(secNewDir);
+  }
+
+  // TEST 30: Secrets Scan
+  const secretsDir = createTempDir('sps-seo-test-secrets-');
+  try {
+    console.log('\nTest 30: Secrets & High-Entropy Scanner');
+    fs.writeFileSync(path.join(secretsDir, '.env'), `
+      AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+      GITHUB_TOKEN=ghp_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      OPENAI_API_KEY=sk-proj-abcdefghijklmnopqrstuvwxyz1234567890abcdefghij
+      JWT_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+    `);
+    fs.writeFileSync(path.join(secretsDir, 'config.js'), `
+      const apiKey = "ghp_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
+    `);
+    const secretsResult = runSecretsScan({ cwd: secretsDir, json: true });
+    assert(secretsResult.findings.some(f => f.type.includes('AWS')), 'Detected AWS Access Key');
+    assert(secretsResult.findings.some(f => f.type.includes('GitHub')), 'Detected GitHub PAT');
+    assert(secretsResult.findings.some(f => f.type.includes('OpenAI')), 'Detected OpenAI Key');
+    assert(secretsResult.findings.some(f => f.type === 'JWT'), 'Detected JWT');
+  } finally {
+    cleanupDir(secretsDir);
+  }
+
+  // TEST 31: Backlink Equity Audit
+  const blNewDir = createTempDir('sps-seo-test-bl2-');
+  try {
+    console.log('\nTest 31: Backlink Equity Audit');
+    fs.mkdirSync(path.join(blNewDir, 'pages'), { recursive: true });
+    fs.writeFileSync(path.join(blNewDir, 'pages/index.html'), `<html><body><main><a href="/about">About us</a><a href="/pricing">Pricing details</a></main></body></html>`);
+    fs.writeFileSync(path.join(blNewDir, 'pages/about.html'), `<html><body><main><a href="/">Home</a></main></body></html>`);
+    fs.writeFileSync(path.join(blNewDir, 'pages/orphan.html'), `<html><body><main><h1>Orphan</h1></main></body></html>`);
+    const blResult = runBacklinkAudit({ cwd: blNewDir, json: true });
+    assert(blResult.orphans.some(p => p.file.includes('orphan.html')), 'Detected orphan page');
+    assert(blResult.totalLinks > 0, 'Detected links');
+    assert(blResult.topByEquity.length > 0, 'Generated top-by-equity list');
+  } finally {
+    cleanupDir(blNewDir);
   }
 
   console.log(`\n==============================================`);

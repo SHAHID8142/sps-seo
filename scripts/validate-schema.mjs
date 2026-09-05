@@ -13,6 +13,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const CWD = process.cwd();
 
@@ -55,7 +56,7 @@ function extractJsonLdBlocks(content, filePath) {
 
 export function validateSchemas(options = {}) {
   const projectDir = options.cwd || CWD;
-  const fileExts = ['.html', '.astro', '.tsx', '.jsx', '.vue', '.svelte'];
+  const fileExts = ['.html', '.astro', '.tsx', '.jsx', '.vue', '.svelte', '.md', '.mdx'];
   const IGNORED = ['node_modules', '.git', '.next', 'dist', 'build'];
 
   const foundBlocks = [];
@@ -217,6 +218,6 @@ export function validateSchemas(options = {}) {
   return result;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   validateSchemas();
 }

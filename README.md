@@ -2,7 +2,7 @@
 
 > **The Ultimate Framework-Agnostic AI Agent Skill & Autonomous Technical SEO Intelligence System**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](VERSION)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](VERSION)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Architecture](https://img.shields.io/badge/architecture-hybrid%20cli%20%2B%20agent-purple.svg)](METHOD-CARD.md)
 [![SEO & AEO](https://img.shields.io/badge/search-Google%20%2B%20AI%20Overviews-orange.svg)](guides/aeo-geo-optimization.md)
@@ -28,6 +28,16 @@ Compatible with **Claude**, **Cursor**, **Codex**, **Antigravity (Gemini)**, **O
 - 🌐 **Multilingual i18n & `hreflang` Reciprocity Engine (`npm run i18n`):** Validates bidirectional alternate link reciprocity, checks for `x-default`, and verifies ISO codes.
 - 🎨 **Branded OpenGraph Card Generator (`npm run og`):** Generates crisp 1200x630 branded SVG social preview cards using brand theme colors and metadata.
 - 🏷️ **Dynamic SVG Score Badge Generator (`npm run badge`):** Generates a live vector badge for `README.md` reflecting your deterministic audit score.
+- 🗃️ **Markdown & MDX Content-First Auditing (`npm run audit`):** Scans `.md`/`.mdx` files (Astro content collections, Next.js MDX, Docusaurus) — frontmatter title/description, ATX heading hierarchy, and markdown image `alt` coverage are now first-class audit signals.
+- 📹 **Video SEO Audit (`npm run video`):** Validates `VideoObject` JSON-LD required fields (`name`, `description`, `thumbnailUrl`, `uploadDate`, `duration`, `contentUrl/embedUrl`), detects YouTube/Vimeo/self-hosted embeds, enforces privacy-enhanced `youtube-nocookie.com` embeds, and flags missing video sitemaps.
+- 📰 **News & Publishing Audit (`npm run news`):** Validates `NewsArticle` schema (headline length, ISO dates, author E-E-A-T, publisher logo), flags stale news content, detects news sitemaps, and surfaces paywall `isAccessibleForFree` declarations.
+- 🛒 **E-Commerce SEO Audit (`npm run ecom`):** Validates Product/Offer schema (price, priceCurrency, availability enum, sku/brand), enforces self-canonical pagination on `/page/2`-style PLP routes, and checks for `ItemList` schema on category pages.
+- 📍 **Local SEO Audit (`npm run local`):** Validates LocalBusiness schema (address, geo, opening hours, sameAs) and runs a **NAP consistency engine** that flags the same phone number written in different formats across pages.
+- 🧬 **Near-Duplicate Content Detector (`npm run dup`):** Combines 64-bit SimHash with token-Jaccard to flag near-duplicate page pairs and duplicate `<title>` tags — no crypto dependencies, fully deterministic.
+- 🗺️ **Sitemap Validator (`npm run sitemap:validate`):** Validates `<loc>` absolute URLs, maps every URL back to a real project route (static, App Router, Pages Router, content files, `[slug]` dynamic), validates `lastmod` W3C datetime, enforces 50k-URL/50MB limits, and checks sitemap-index children + hreflang `x-default`.
+- 📡 **RSS 2.0 Feed Generator (`npm run rss`):** Compiles `public/rss.xml` from markdown frontmatter and/or HTML `<time>`, newest-first, capped at 50 items.
+- 🏢 **CMS Adapters:** New playbooks for **WordPress, Shopify, Webflow, and headless CMS (Sanity/Contentful/Strapi/Payload)** in `adapters/`.
+- 🎛️ **Unified CLI Router (`npx sps-seo <command>`):** One binary (`scripts/cli.mjs`) dispatches every tool with a shared `--help` catalog — equivalent to `npm run <command>`.
 - ⚡ **Instant IndexNow API Ping (`npm run ping-indexnow`):** Directly notifies Bing, Yandex, and IndexNow crawlers upon page and route updates.
 - 🛡️ **GitHub Actions CI Quality Gate (`.github/workflows/seo-check.yml`):** Automatically blocks pull requests if the SEO audit score drops below **90/100 (Grade A)**.
 - 💯 **Lighthouse 100/100 Playbook & Master Optimization Guides:** Detailed blueprints for 100/100 across Performance, Accessibility, Best Practices, and SEO ([guides/lighthouse-100-playbook.md](guides/lighthouse-100-playbook.md), [guides/asset-optimization-master.md](guides/asset-optimization-master.md)).
@@ -57,7 +67,7 @@ sps-seo/
 ├── sps-seo-config.example.json       # Project configuration template
 ├── package.json                      # NPM scripts and project metadata
 ├── README.md                         # Documentation & installation manual
-├── VERSION                           # Current skill version stamp (1.0.0)
+├── VERSION                           # Current skill version stamp (1.4.0)
 ├── .github/
 │   └── workflows/
 │       └── seo-check.yml             # Automated CI quality gate enforcing score >= 90
@@ -141,6 +151,15 @@ npm run security            # Enterprise security headers & best practices scann
 npm run security:json       # Output security scan in pure JSON
 npm run i18n                # Multilingual hreflang reciprocity check
 
+# 2b. Vertical SEO Audits (v1.4)
+npm run video               # Video SEO (VideoObject schema, embeds, video sitemap)
+npm run news                # News SEO (NewsArticle schema, freshness, news sitemap)
+npm run ecom                # E-commerce SEO (Product/Offer schema, pagination canonicals)
+npm run local               # Local SEO (LocalBusiness schema, NAP consistency)
+npm run dup                 # Near-duplicate content & duplicate-title detector
+npm run sitemap:validate    # Sitemap URL resolution, lastmod, index & hreflang checks
+npm run rss                 # Generate RSS 2.0 feed from content pages
+
 # 3. Competitor Intelligence & Benchmarks
 npm run competitor          # Scrapes competitor URLs & generates Topic Gap Matrix
 npm run compare             # Side-by-side technical & content comparison
@@ -155,7 +174,9 @@ npm run og                  # Generate branded 1200x630 og-image.svg
 
 # 5. Search Engine Indexing & CI Tests
 npm run ping-indexnow       # Alert IndexNow (Bing/Yandex) with updated routes
-npm test                    # Run comprehensive automated test suite (75 assertions)
+npm test                    # Run comprehensive automated test suite (core + verticals)
+npm run test:phase2         # Run the vertical/expansion test suite only
+# Unified CLI: npx sps-seo <command> dispatches every tool (or `npm run <command>`)
 ```
 
 ---

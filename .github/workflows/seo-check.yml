@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main, master ]
 
+concurrency:
+  group: seo-check-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   seo-audit:
     name: Technical SEO & AEO Audit
@@ -20,6 +24,10 @@ jobs:
         with:
           node-version: 20
 
+      - name: Run Deterministic Test Suite
+        run: |
+          npm test
+
       - name: Run SPS SEO Deterministic Audit
         id: audit
         run: |
@@ -29,6 +37,10 @@ jobs:
           echo "AUDIT_SCORE=$SCORE" >> $GITHUB_ENV
           echo "AUDIT_GRADE=$GRADE" >> $GITHUB_ENV
           echo "Deterministic SEO Score: $SCORE/100 (Grade: $GRADE)"
+
+      - name: Run Vertical & Expansion Suite (Phase 2)
+        run: |
+          node tests/test-phase2.mjs
 
       - name: Run Schema Validator
         run: |

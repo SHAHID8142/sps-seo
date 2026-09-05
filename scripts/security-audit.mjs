@@ -18,6 +18,9 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { scanSecurityAndBestPractices } from './security-check.mjs';
+import { captureConsole } from './lib/core.mjs';
 
 const CWD = process.cwd();
 
@@ -177,7 +180,7 @@ export async function runSecurityAudit(options = {}) {
       if (IGNORE_DIRS.has(e.name)) continue;
       const full = path.join(dir, e.name);
       if (e.isDirectory()) walkJs(full);
-      else if (e.isFile() && /\.(ts|js|mjs|cjs|tsx|jsx)$/i.test(e.name)) {
+      else if (e.isFile() && /\.(ts|js|mjs|cjs|tsx|jsx|html|htm|astro|vue|svelte)$/i.test(e.name)) {
         let content;
         try { content = fs.readFileSync(full, 'utf8'); } catch { continue; }
         for (const sink of evalSinks) {
@@ -216,8 +219,10 @@ export async function runSecurityAudit(options = {}) {
       else if (e.isFile() && SCAN_EXTS.has(path.extname(e.name).toLowerCase())) {
         let content;
         try { content = fs.readFileSync(full, 'utf8'); } catch { continue; }
-        // Look for http:// in src/href/import/url() contexts (avoid code comments)
-        const stripped = content.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+        // Look for http:// in src/href/import/url() contexts (avoid code comments).
+        // NOTE: the line-comment stripper must be anchored (^ or non-colon) so
+        // `http://` and `https://` URL schemes are never truncated.
+        const stripped = content.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '');
         const m = stripped.match(/https?:\/\//g);
         if (!m) continue;
         const httpMatches = m.filter(() => false); // placeholder; actual http detection:
@@ -280,6 +285,16 @@ export async function runSecurityAudit(options = {}) {
       info: findings.filter(f => f.severity === 'info').length,
     }
   };
+
+// [v1.4 composed] Merge the deprecated standalone companion engine into this unified report.
+  try {
+    const jsonMode = options.json || process.argv.includes('--json');
+    result.companion = jsonMode
+      ? captureConsole(() => scanSecurityAndBestPractices({ json: true })).result
+      : scanSecurityAndBestPractices({});
+  } catch (e) {
+    result.companion = { error: e.message };
+  }
 
   if (options.json || process.argv.includes('--json')) {
     console.log(JSON.stringify(result, null, 2));
@@ -370,7 +385,7 @@ function printConsole(result) {
   console.log('');
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   runSecurityAudit().catch(err => {
     console.error('Security audit error:', err);
     process.exit(1);

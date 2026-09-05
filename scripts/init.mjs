@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
+import { fileURLToPath } from 'node:url';
 
 const CWD = process.cwd();
 const targetConfigPath = path.join(CWD, 'sps-seo-config.json');
@@ -139,7 +140,7 @@ async function main() {
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   main().catch(err => {
     console.error('Init wizard error:', err);
     process.exit(1);

@@ -17,6 +17,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const CWD = process.cwd();
 
@@ -24,7 +25,7 @@ const MAX_INDIVIDUAL_IMG_BYTES = 200 * 1024; // 200 KB
 const MAX_TOTAL_PAYLOAD_BYTES = 1.5 * 1024 * 1024; // 1.5 MB
 
 const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.avif', '.svg', '.gif']);
-const TEMPLATE_EXTS = new Set(['.html', '.astro', '.tsx', '.jsx', '.vue', '.svelte']);
+const TEMPLATE_EXTS = new Set(['.html', '.astro', '.tsx', '.jsx', '.vue', '.svelte', '.md', '.mdx']);
 const CSS_EXTS = new Set(['.css', '.scss', '.sass', '.less']);
 
 const IGNORE_DIRS = new Set(['node_modules', '.git', '.next', 'dist', 'build', '.cache']);
@@ -283,6 +284,6 @@ export function scanPerformanceBudget(options = {}) {
   return result;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   scanPerformanceBudget();
 }

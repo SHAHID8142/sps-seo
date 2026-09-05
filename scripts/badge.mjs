@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { runAudit } from './audit.mjs';
+import { fileURLToPath } from 'node:url';
 
 const CWD = process.cwd();
 
@@ -75,6 +76,6 @@ export async function generateBadge(options = {}) {
   return { badgeFile, svg, score, grade };
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   generateBadge();
 }

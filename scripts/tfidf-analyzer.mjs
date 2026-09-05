@@ -235,6 +235,12 @@ export function analyzeTfIdf(options = {}) {
 
 // Auto-run if executed directly
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
-  const isJson = process.argv.includes('--json');
-  analyzeTfIdf({ json: isJson });
+  // [v1.4 deprecated] Forward to the canonical unified entrypoint
+  console.warn('⚠️  Deprecated entrypoint: tfidf-analyzer.mjs is now composed into ./tfidf.mjs. Forwarding...\n');
+  const { spawnSync } = await import('node:child_process');
+  const res = spawnSync(process.execPath, [
+    path.join(path.dirname(fileURLToPath(import.meta.url)), 'tfidf.mjs'),
+    ...process.argv.slice(2)
+  ], { stdio: 'inherit' });
+  process.exit(res.status ?? 0);
 }

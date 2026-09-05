@@ -22,6 +22,10 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { extractHtmlHeadings } from './lib/core.mjs';
+import { optimizeSnippets } from './snippet-optimizer.mjs';
+import { captureConsole } from './lib/core.mjs';
 
 const CWD = process.cwd();
 
@@ -31,7 +35,7 @@ const IGNORE_DIRS = new Set([
   '.sps', '.agents', 'public'
 ]);
 
-const SCAN_EXTS = new Set(['.html', '.htm', '.astro', '.tsx', '.jsx', '.vue', '.svelte']);
+const SCAN_EXTS = new Set(['.html', '.htm', '.astro', '.tsx', '.jsx', '.vue', '.svelte', '.md', '.mdx']);
 
 const QUESTION_STARTERS = /^(how|what|why|when|where|who|which|can|does|is|are|should)\b/i;
 
@@ -81,16 +85,15 @@ export function runSnippetAudit(options = {}) {
       recommendations: []
     };
 
-    // Question-shaped headings
-    const headingRegex = /<h([2-3])\b[^>]*>([\s\S]*?)<\/\1>/gi;
-    let m;
-    while ((m = headingRegex.exec(stripped)) !== null) {
-      const headingText = m[2].replace(/<[^>]+>/g, '').trim();
+    // Question-shaped headings (backref-free pairing — V8-safe)
+    const headingMatches = extractHtmlHeadings(stripped, { minLevel: 2, maxLevel: 3 });
+    for (const hm of headingMatches) {
+      const headingText = hm.text;
       if (QUESTION_STARTERS.test(headingText)) {
         report.questionHeadings++;
 
         // Check the next ~600 chars after the heading for a 40-60 word paragraph
-        const afterHeading = stripped.slice(m.index + m[0].length, m.index + m[0].length + 1000);
+        const afterHeading = stripped.slice(hm.end, hm.end + 1000);
         const firstParagraph = /<p\b[^>]*>([\s\S]*?)<\/p>/i.exec(afterHeading);
         if (firstParagraph) {
           const paraText = firstParagraph[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -207,6 +210,16 @@ export function runSnippetAudit(options = {}) {
     findings
   };
 
+// [v1.4 composed] Merge the deprecated standalone companion engine into this unified report.
+  try {
+    const jsonMode = options.json || process.argv.includes('--json');
+    result.companion = jsonMode
+      ? captureConsole(() => optimizeSnippets({ json: true })).result
+      : optimizeSnippets({});
+  } catch (e) {
+    result.companion = { error: e.message };
+  }
+
   if (options.json || process.argv.includes('--json')) {
     console.log(JSON.stringify(result, null, 2));
     return result;
@@ -250,6 +263,6 @@ function printConsole(result) {
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   runSnippetAudit();
 }

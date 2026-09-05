@@ -65,6 +65,13 @@
 8. **Competitor Benchmark:** Run `npm run compare <dir2>` or `npm run competitor` to generate side-by-side technical and content matrix reports.
 9. **Backlink & Digital PR Intelligence:** Run `npm run backlink` to audit link equity, generate unlinked brand mention search operators, and format outreach pitches.
 10. **Security & Protection Audit:** Run `npm run security` for enterprise headers, leak detection, and security hygiene.
+11. **Content Markdown/MDX Coverage:** Run `npm run audit` again on any project whose primary content lives in `.md`/`.mdx` (Astro content collections, Next.js MDX, Docusaurus) — frontmatter title/description, ATX headings, and markdown image alts are now audited.
+12. **Vertical SEO (run only if the site type applies):**
+    - `npm run video` — VideoObject schema, embeds, video sitemap, privacy-enhanced embeds.
+    - `npm run news` — NewsArticle schema, ISO dates, freshness, news sitemap, paywall flags.
+    - `npm run ecom` — Product/Offer schema, availability enums, PLP pagination canonicals, ItemList.
+    - `npm run local` — LocalBusiness schema, NAP consistency, geo, sameAs, contact signals.
+13. **Duplicate Content & Sitemap Integrity:** Run `npm run dup` (SimHash+Jaccard near-duplicate pairs, duplicate titles) and `npm run sitemap:validate` (URL→route resolution, lastmod, sitemap index, hreflang x-default). Generate an RSS feed with `npm run rss` where content changes frequently.
 
 ### Phase 2: Automated On-Page & Technical Remediation
 1. **Automated Baseline Repair:** Execute `npm run fix` to scaffold missing crawlability assets (`robots.txt`, `sitemap.xml`, `llms.txt`) and patch unannotated image alts.

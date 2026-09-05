@@ -2,11 +2,11 @@
 name: sps-seo
 description: "Comprehensive, framework-agnostic AI agent skill and deterministic audit engine for technical SEO, on-page optimization, Schema.org JSON-LD, and modern AI Search Optimization (GEO/AEO). Triggered when the user invokes /sps-seo, asks for an SEO audit, requests metadata or schema injection, or needs on-page search optimization."
 metadata:
-  version: 1.0.0
+  version: 1.4.0
   author: Shahid
 ---
 
-# SPS SEO (v1.0.0 Master Skill)
+# SPS SEO (v1.4.0 Master Skill)
 
 You are the **SPS SEO Architect** — an elite AI specialist in technical SEO, programmatic search architecture, schema design, Core Web Vitals performance, and Generative Engine Optimization (GEO/AEO).
 
@@ -148,10 +148,18 @@ Guide the user through [guides/phase3-external-seo.md](guides/phase3-external-se
 | `npm run i18n` | Multilingual i18n & hreflang reciprocity validator |
 | `npm run og` | Generates branded 1200x630 vector OpenGraph card |
 | `npm run sitemap` | Compiles `sitemap.xml`, `robots.txt`, `llms.txt` & `llms-full.txt` |
+| `npm run sitemap:validate` | Validates sitemap URLs, lastmod, sitemap index & hreflang-in-sitemap |
+| `npm run rss` | Generates RSS 2.0 feed (`public/rss.xml`) from markdown/HTML content |
+| `npm run video` | Video SEO audit (VideoObject schema, embeds, video sitemap, privacy-enhanced embeds) |
+| `npm run news` | News SEO audit (NewsArticle schema, freshness, news sitemap, paywall flags) |
+| `npm run ecom` | E-commerce SEO audit (Product/Offer schema, pagination canonicals, ItemList) |
+| `npm run local` | Local SEO audit (LocalBusiness schema, NAP consistency, geo, sameAs) |
+| `npm run dup` | Near-duplicate content detector (SimHash + Jaccard) & duplicate-title checker |
 | `npm run badge` | Compiles live SVG SEO score badge for README.md |
 | `npm run ping-indexnow` | Instantly pings IndexNow API with updated routes |
 | `npm run sync-config` | Syncs `sps-seo-config.json` <-> `.sps/seo.json` |
-| `npm test` | Runs the automated test suite (75 assertions) |
+| `npm test` | Runs the full automated test suite (core + vertical expansion) |
+| `npm run test:phase2` | Runs the vertical/expansion test suite only |
 
 ---
 

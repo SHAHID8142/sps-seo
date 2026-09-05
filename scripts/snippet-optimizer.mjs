@@ -13,6 +13,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { extractHtmlHeadings } from './lib/core.mjs';
 
 const CWD = process.cwd();
 
@@ -76,15 +77,17 @@ export function optimizeSnippets(options = {}) {
 
     const relPath = path.relative(projectDir, file);
 
-    // 1. Detect Question Headings & Follow-up Answer Capsules
-    const qHeadingRegex = /<(h[2-4])[^>]*>([\s\S]*?(?:what|how|why|when|where|who|is|are|can|best)[\s\S]*?)<\/\1>(?:[\s\n\r]*<p[^>]*>([\s\S]*?)<\/p>)?/gi;
-    let match;
+    // 1. Detect Question Headings & Follow-up Answer Capsules (backref-free, V8-safe)
+    const QUESTION_WORD = /\b(?:what|how|why|when|where|who|is|are|can|best)\b/i;
     const capsules = [];
 
-    while ((match = qHeadingRegex.exec(content)) !== null) {
-      const tag = match[1];
-      const headingText = stripHtml(match[2]);
-      const pText = match[3] ? stripHtml(match[3]) : '';
+    for (const hm of extractHtmlHeadings(content, { minLevel: 2, maxLevel: 4 })) {
+      const headingText = hm.text;
+      if (!QUESTION_WORD.test(headingText)) continue;
+      const tag = 'h' + hm.level;
+      const after = content.slice(hm.end);
+      const pMatch = /^[\s\n\r]*<p[^>]*>([\s\S]*?)<\/p>/i.exec(after);
+      const pText = pMatch ? stripHtml(pMatch[1]) : '';
       const words = pText.split(/\s+/).filter(Boolean);
       const wordCount = words.length;
 
@@ -200,6 +203,12 @@ export function optimizeSnippets(options = {}) {
 
 // Auto-run if executed directly
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
-  const isJson = process.argv.includes('--json');
-  optimizeSnippets({ json: isJson });
+  // [v1.4 deprecated] Forward to the canonical unified entrypoint
+  console.warn('⚠️  Deprecated entrypoint: snippet-optimizer.mjs is now composed into ./snippet-audit.mjs. Forwarding...\n');
+  const { spawnSync } = await import('node:child_process');
+  const res = spawnSync(process.execPath, [
+    path.join(path.dirname(fileURLToPath(import.meta.url)), 'snippet-audit.mjs'),
+    ...process.argv.slice(2)
+  ], { stdio: 'inherit' });
+  process.exit(res.status ?? 0);
 }

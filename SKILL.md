@@ -48,8 +48,14 @@ Read [METHOD-CARD.md](METHOD-CARD.md) before executing any strategy.
    ```bash
    npm run audit
    ```
-4. **Deep Graph, Performance, Security & Cannibalization Analysis:**
+4. **Deep Graph, Performance, Keyword & Security Analysis:**
    ```bash
+   npm run keyword           # Audits keyword density, prominence & search intent
+   npm run tfidf             # Algorithmic TF*IDF & semantic entity co-occurrence
+   npm run ranking           # 15-signal SERP ranking probability engine
+   npm run snippet           # Optimizes 40-60w answer capsules & featured snippets
+   npm run redirect          # Audits 301/302 redirects, chains & trailing slash
+   npm run backlink          # Audits link equity & generates digital PR pitches
    npm run links             # Maps internal link graph & detects orphan pages
    npm run cannibalization   # Identifies duplicate titles & keyword competition
    npm run perf              # Scans asset weight budgets & image dimensions (CLS)
@@ -123,29 +129,38 @@ Guide the user through [guides/phase3-external-seo.md](guides/phase3-external-se
 | :--- | :--- |
 | `npm run init` | Interactive setup wizard for `sps-seo-config.json` |
 | `npm run audit` | Deterministic 100-point AST/DOM audit scanner |
+| `npm run keyword` | Keyword density, prominence & search intent analyzer |
+| `npm run tfidf` | Algorithmic TF*IDF & semantic entity co-occurrence calculator |
+| `npm run ranking` | 15-signal SERP ranking probability engine (0–100 score) |
+| `npm run snippet` | Featured snippet & 40–60w answer capsule optimizer |
+| `npm run redirect` | 301/302 redirects, chains & canonical trailing slash auditor |
+| `npm run backlink` | Backlink equity, unlinked brand mentions & digital PR engine |
 | `npm run fix` | 1-click automated remediation for missing assets & alts |
 | `npm run fix:dry` | Dry-run preview of automated fixes |
 | `npm run links` | Internal link graph analyzer & orphan page detector |
 | `npm run cannibalization` | Keyword cannibalization & duplicate meta checker |
 | `npm run competitor` | Competitor intelligence & Content Gap Matrix generator |
+| `npm run compare` | Side-by-side technical & content competitive benchmark |
 | `npm run perf` | Core Web Vitals & asset weight budget scanner |
 | `npm run security` | Enterprise security headers, secret leaks & best practices scanner |
 | `npm run preview` | Visual SERP, Social, and AI Citation previewer |
 | `npm run validate-schema` | Schema.org syntax & Google Rich Results validator |
 | `npm run i18n` | Multilingual i18n & hreflang reciprocity validator |
 | `npm run og` | Generates branded 1200x630 vector OpenGraph card |
-| `npm run sitemap` | Compiles `sitemap.xml`, `robots.txt`, and `llms.txt` |
+| `npm run sitemap` | Compiles `sitemap.xml`, `robots.txt`, `llms.txt` & `llms-full.txt` |
 | `npm run badge` | Compiles live SVG SEO score badge for README.md |
 | `npm run ping-indexnow` | Instantly pings IndexNow API with updated routes |
 | `npm run sync-config` | Syncs `sps-seo-config.json` <-> `.sps/seo.json` |
-| `npm test` | Runs the automated test suite |
+| `npm test` | Runs the automated test suite (75 assertions) |
 
 ---
 
 ## 📚 Master Optimization & Performance Playbooks
 
+- **[Unified Search Disciplines Playbook (SEO, AEO, GEO, AIO, SXO)](guides/modern-search-disciplines-seo-aeo-geo-aio-sxo.md):** Exhaustive architectural blueprint uniting traditional search, answer engines, generative LLM citations, Google AI Overviews, and Core Web Vitals UX.
 - **[Lighthouse 100/100 Playbook](guides/lighthouse-100-playbook.md):** Exhaustive checklist and architectural patterns for achieving perfect 100/100 scores across Performance, Accessibility, Best Practices, and SEO.
 - **[Asset Optimization Master Guide](guides/asset-optimization-master.md):** AVIF/WebP next-gen compression, responsive `srcset`, WOFF2 font subsetting, and zero-CLS font metric overrides.
 - **[Third-Party Scripts Strategy](guides/third-party-scripts-strategy.md):** Offloading analytics/trackers to Web Workers with Partytown, facade components for YouTube/maps, and non-blocking tag injection.
 - **[Caching & Edge CDN Headers Guide](guides/caching-and-headers-guide.md):** `Cache-Control: immutable`, stale-while-revalidate, Brotli/Zstandard compression, and security headers.
+
 

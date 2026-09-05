@@ -2,13 +2,16 @@
 
 /**
  * SPS SEO Core Web Vitals & Asset Budget Scanner
- * Version: 1.0.0
- * 
- * Enforces Google 2026 Core Web Vitals and low-end mobile asset budgets:
+ * Version: 1.2.0
+ *
+ * Enforces Google Core Web Vitals and low-end mobile asset budgets:
  * - Flags image files > 200 KB
  * - Flags total initial static payload > 1.5 MB
  * - CLS Guard: flags <img> tags missing explicit width/height dimensions
+ * - Modern-image-format detection (flags PNG/JPG when WebP/AVIF could replace)
+ * - Responsive image audit: flags <img> without srcset/sizes when applicable
  * - Checks for font-display: swap in CSS
+ * - Live Cache-Control header probe (when --url provided)
  * - Computes Performance & Asset Budget Score (0-100)
  */
 

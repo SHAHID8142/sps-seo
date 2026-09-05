@@ -43,28 +43,36 @@
    - Enforce `rel="noopener noreferrer"` on `target="_blank"` links and eliminate mixed content (`http://`).
    - Prohibit viewport zoom locking (`user-scalable=no` or `maximum-scale=1`).
 
+7. **Multi-Disciplinary Search Excellence (SEO, AEO, GEO, AIO, SXO):**
+   - **SEO (Search Engine Optimization):** Technical crawlability, clean canonicals, indexation control, and semantic HTML hierarchy.
+   - **AEO (Answer Engine Optimization):** 40–60 word Answer Capsules under question headings for featured snippets and voice assistants.
+   - **GEO (Generative Engine Optimization):** Statistical citations, direct definitions, high-information-density structured data for Perplexity and ChatGPT Search.
+   - **AIO (Google AI Overviews):** First-paragraph entity grounding, list/step procedural markup, and tabular data extraction.
+   - **SXO (Search Experience Optimization):** Sub-second LCP, zero CLS, clear visual hierarchy, scannable typography, and high-conversion intent fulfillment.
+
 ---
 
-## 2. Three-Phase Execution Workflow
+## 2. Three-Phase Execution Workflow & Tool Catalog
 
 ### Phase 1: Discovery & Deterministic Audit
-1. **Intake & Interview:** Prompt the user or run `npm run init` to populate `sps-seo-config.json` with:
-   - Primary and secondary target keywords.
-   - Target geography, language, and audience persona.
-   - Canonical production domain URL and author/brand credentials.
-2. **Competitor Intelligence:** Run `npm run competitor` to inspect competitor heading trees and extract topic gaps into `sps-seo-competitor-matrix.md`.
-3. **Execute Audit:** Run `npm run audit` (or inspect layouts, pages, and images directly if running without shell tools).
-4. **Deep Diagnostics:** Run `npm run links`, `npm run cannibalization`, and `npm run perf`.
-5. **Generate Audit Report:** Present the baseline score (0–100) and list all critical blockers, warnings, and missing assets.
+1. **Intake & Configuration:** Run `npm run init` to populate `sps-seo-config.json` (auto-synced with `.sps/seo.json`).
+2. **Execute Full Audit:** Run `npm run audit` for 100-point deterministic evaluation.
+3. **Keyword & Prominence Audit:** Run `npm run keyword` to check keyword density (1.0–2.5%), prominence in Title/H1/first 100 words, and search intent.
+4. **TF*IDF Semantic Co-occurrence:** Run `npm run tfidf` to calculate unigram/bigram relevance and identify missing salient entities.
+5. **Ranking SERP Probability:** Run `npm run ranking` to evaluate the page across 15 Google & AI ranking signals (0–100 score).
+6. **Featured Snippet & Answer Capsule Check:** Run `npm run snippet` to audit 40–60 word answer capsules, procedural steps, and tables.
+7. **Redirect & Canonical Health:** Run `npm run redirect` to audit 301/308 vs 302/307 status codes, chains, loops, and trailing slash consistency.
+8. **Competitor Benchmark:** Run `npm run compare <dir2>` or `npm run competitor` to generate side-by-side technical and content matrix reports.
+9. **Backlink & Digital PR Intelligence:** Run `npm run backlink` to audit link equity, generate unlinked brand mention search operators, and format outreach pitches.
+10. **Security & Protection Audit:** Run `npm run security` for enterprise headers, leak detection, and security hygiene.
 
 ### Phase 2: Automated On-Page & Technical Remediation
-1. **Automated Baseline Repair:** Execute `npm run fix` to scaffold missing crawlability assets and patch unannotated image alts.
+1. **Automated Baseline Repair:** Execute `npm run fix` to scaffold missing crawlability assets (`robots.txt`, `sitemap.xml`, `llms.txt`) and patch unannotated image alts.
 2. **Metadata Injection:** Surgically inject title, description, canonical link, OpenGraph, and Twitter tags according to the detected framework's native patterns.
 3. **Schema.org Structured Data:** Inject valid JSON-LD rich snippets (Organization, WebSite, Article, Product, SoftwareApp, or FAQPage) and validate with `npm run validate-schema`.
 4. **Visual Previews & Social Assets:** Generate `og-image.svg` via `npm run og`, preview SERP cards via `npm run preview`, and compile live score badge via `npm run badge`.
-5. **Heading Hierarchy Normalization:** Ensure every page has exactly one `<h1>` that contains the primary keyword, and ensure heading levels progress sequentially (`h1` -> `h2` -> `h3`).
-6. **Technical Crawlability Assets:** Generate or configure `sitemap.xml`, `robots.txt`, and `llms.txt` via `npm run sitemap`.
-7. **Verification DoD:** Ensure the re-audit score reaches **≥ 90/100 (Grade A)**.
+5. **Heading Hierarchy Normalization:** Ensure every page has exactly one `<h1>` containing the primary keyword, progressing sequentially (`h1` -> `h2` -> `h3`).
+6. **Verification DoD:** Ensure the re-audit score reaches **≥ 90/100 (Grade A)**.
 
 ### Phase 3: External SEO Guidance & Launch Checklist
 1. **Instant Search Engine IndexNow Ping:** Run `npm run ping-indexnow` to alert Bing and IndexNow engines immediately.
@@ -176,9 +184,11 @@ const {
 
 ---
 
-## 4. Modern Generative Engine Optimization (AEO/GEO)
-- **Answer Capsules:** Directly beneath question `<h2>` headings, place a 40–60 word concise, factual summary before expanding into details.
-- **Data & Tables:** Present comparison and quantitative metrics in Markdown/HTML tables for direct RAG model ingestion.
+## 4. Modern Multi-Disciplinary Search Rules (AEO, GEO, AIO, SXO)
+- **Answer Capsules (AEO/AIO):** Directly beneath question `<h2>` headings, place a 40–60 word concise, factual definition before expanding into details.
+- **Data & Tables (GEO):** Present comparison and quantitative metrics in Markdown/HTML tables for direct RAG model ingestion.
 - **`llms.txt` & `llms-full.txt`:** Maintain machine-readable knowledge files (`public/llms.txt` and optional `public/llms-full.txt`).
 - **AI Citation Bot Policy:** Explicitly allow citation crawlers (`OAI-SearchBot`, `ChatGPT-User`, `ClaudeBot`, `PerplexityBot`, `Bingbot`) in `robots.txt` so AI search engines can cite your content. Disallow training-only crawlers (`GPTBot`, `CCBot`) if you prefer not to donate training data.
+- **Keyword Prominence & TF*IDF:** Keep primary keyword density between 1.0%–2.5%, front-load in `<title>` and `<h1>`, include in first 100 words and meta description, and ensure top TF*IDF co-occurring terms are naturally integrated without stuffing.
+- **Search Experience Optimization (SXO):** Optimize for dwell time and task completion—eliminate layout shifts, offer instant table of contents, and deliver direct answers above the fold.
 

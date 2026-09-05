@@ -34,6 +34,14 @@ Compatible with **Claude**, **Cursor**, **Codex**, **Antigravity (Gemini)**, **O
 - 🤖 **2026 AI Search & Citation Bot Policy:** Compliant with OpenAI, Anthropic, and Perplexity citation crawlers (`OAI-SearchBot`, `ClaudeBot`, `PerplexityBot`), dual `llms.txt` + `llms-full.txt` generation, and training-bot opt-out controls.
 - 🚀 **Third-Party Script Isolation & Edge Caching:** Web Worker offloading via Partytown, interaction-deferred script facades, and immutable CDN caching recipes ([guides/third-party-scripts-strategy.md](guides/third-party-scripts-strategy.md), [guides/caching-and-headers-guide.md](guides/caching-and-headers-guide.md)).
 - 🛡️ **Enterprise Security & Best Practices Scanner (`npm run security`):** Static analyzer auditing HTTP security headers (HSTS, CSP, X-Frame-Options, nosniff, Referrer-Policy), public folder leaks (`.env`, `.git`), hardcoded API keys/secrets, mixed content (`http://`), un-sanitized DOM injections, and viewport zoom accessibility.
+- 📊 **Unified Search Disciplines (SEO, AEO, GEO, AIO, SXO):** Exhaustive architectural coverage uniting traditional crawl/rank (SEO), direct question answering (AEO), generative LLM citations (GEO), Google AI Overviews (AIO), and Core Web Vitals UX (SXO) ([guides/modern-search-disciplines-seo-aeo-geo-aio-sxo.md](guides/modern-search-disciplines-seo-aeo-geo-aio-sxo.md)).
+- 🔤 **Keyword Prominence, Density & Intent Engine (`npm run keyword`):** Audits exact/secondary keyword density, checks prominence across Title, H1, first 100 words, slug, and meta description, with stuffing guard (>3%).
+- 🧮 **Algorithmic TF*IDF & Semantic Entity Scanner (`npm run tfidf`):** Computes mathematical TF, IDF, and TF*IDF across unigrams and bigrams, mapping topical authority and identifying semantic content gaps.
+- 🎯 **15-Signal SERP Ranking Probability Engine (`npm run ranking`):** Computes a 0–100 probability score across search intent, content depth, E-E-A-T credentials, and rich formatting.
+- 💬 **Featured Snippets & Answer Capsule Optimizer (`npm run snippet`):** Identifies and optimizes 40–60 word answer capsules, procedural step lists (`<ol>`), and comparison tables (`<table>`).
+- 🔀 **Redirects, Chains & Canonical Auditor (`npm run redirect`):** Audits 301 vs 302 rules across Next.js, Vercel, and Netlify, flags link equity leaks, redirect loops, and trailing slash discrepancies.
+- 🔗 **Backlink Equity & Digital PR Engine (`npm run backlink`):** Outbound link equity scanner, unlinked brand mention query generator, and data-driven digital PR outreach pitches.
+- ⚖️ **Side-by-Side Competitive Benchmark (`npm run compare`):** Compares your site directly against competitor checkouts across 26 technical and content dimensions.
 - 🔄 **SPS Ecosystem Native & Dual-Memory:** Bidirectional synchronization between `sps-seo-config.json` and `./.sps/seo.json`.
 - 📋 **Zero-Install Portability:** Includes a standalone monolithic [SYSTEM-PROMPT.md](SYSTEM-PROMPT.md) for direct copy-pasting or GitHub raw retrieval.
 
@@ -60,6 +68,13 @@ sps-seo/
 │   ├── competitor-intel.mjs          # Competitor intelligence & Content Gap Matrix generator
 │   ├── perf-budget.mjs               # Core Web Vitals & asset weight budget scanner
 │   ├── security-check.mjs            # Enterprise security headers, secret leaks & best practices scanner
+│   ├── keyword-check.mjs             # Keyword density, prominence & search intent analyzer
+│   ├── tfidf-analyzer.mjs            # Algorithmic TF*IDF & semantic entity co-occurrence calculator
+│   ├── ranking-intel.mjs             # 15-signal SERP ranking probability engine
+│   ├── snippet-optimizer.mjs         # Featured snippet, answer capsule & FAQ schema generator
+│   ├── redirect-audit.mjs            # 301/302 redirects, chains & canonical trailing slash auditor
+│   ├── backlink-intel.mjs            # Backlink equity, unlinked brand mentions & digital PR engine
+│   ├── seo-compare.mjs               # Side-by-side competitive benchmark matrix generator
 │   ├── preview-serp.mjs              # Visual SERP, Social, and AI Citation previewer
 │   ├── internal-links.mjs            # Internal link graph analyzer & orphan page detector
 │   ├── cannibalization.mjs           # Keyword cannibalization & duplicate meta checker
@@ -88,6 +103,7 @@ sps-seo/
 │   ├── faq.json                      # FAQPage schema
 │   └── breadcrumb.json               # BreadcrumbList schema
 └── guides/
+    ├── modern-search-disciplines-seo-aeo-geo-aio-sxo.md # Unified SEO, AEO, GEO, AIO & SXO playbook
     ├── phase1-discovery-audit.md        # Discovery intake questions & scoring guidelines
     ├── phase2-codebase-execution.md     # Surgical codebase modification playbook
     ├── phase3-external-seo.md           # GSC setup, DNS verification, indexing requests, backlinks
@@ -111,6 +127,12 @@ npm run sync-config         # Syncs sps-seo-config.json <-> .sps/seo.json
 # 2. Auditing & Technical Diagnostics
 npm run audit               # Deterministic 100-pt audit scanner
 npm run audit:json          # Output audit in pure JSON
+npm run keyword             # Keyword density, prominence & intent analyzer
+npm run tfidf               # Algorithmic TF*IDF & semantic entity scanner
+npm run ranking             # 15-signal SERP ranking probability engine
+npm run snippet             # Featured snippet & 40-60w answer capsule optimizer
+npm run redirect            # 301/302 redirects, chains & trailing slash audit
+npm run backlink            # Backlink equity & digital PR outreach generator
 npm run links               # Internal link graph & orphan page analyzer
 npm run cannibalization     # Keyword cannibalization & duplicate meta detector
 npm run validate-schema     # Schema.org JSON-LD validator
@@ -119,20 +141,21 @@ npm run security            # Enterprise security headers & best practices scann
 npm run security:json       # Output security scan in pure JSON
 npm run i18n                # Multilingual hreflang reciprocity check
 
-# 3. Competitor Intelligence & Visual Previews
+# 3. Competitor Intelligence & Benchmarks
 npm run competitor          # Scrapes competitor URLs & generates Topic Gap Matrix
+npm run compare             # Side-by-side technical & content comparison
 npm run preview             # Generates interactive HTML SERP & social preview dashboard
 npm run badge               # Generates live SVG SEO score badge
 
 # 4. Automated Remediation & Asset Compilation
 npm run fix:dry             # Preview 1-click automatic fixes
 npm run fix                 # Apply automatic fixes (robots, sitemaps, alts)
-npm run sitemap             # Compile sitemap.xml, robots.txt, and llms.txt
+npm run sitemap             # Compile sitemap.xml, robots.txt, llms.txt & llms-full.txt
 npm run og                  # Generate branded 1200x630 og-image.svg
 
 # 5. Search Engine Indexing & CI Tests
 npm run ping-indexnow       # Alert IndexNow (Bing/Yandex) with updated routes
-npm test                    # Run comprehensive automated test suite
+npm test                    # Run comprehensive automated test suite (75 assertions)
 ```
 
 ---

@@ -54,6 +54,10 @@
 - Store project SEO variables in `sps-seo-config.json`.
 - If an SPS ecosystem directory (`./.sps/`) is present, run `node scripts/sync-config.mjs` to maintain bidirectional synchronization with `./.sps/seo.json`.
 
+### Law 10: Multi-Disciplinary Search Excellence (SEO, AEO, GEO, AIO, SXO)
+- Optimize pages across all 5 search pillars: technical crawlability (SEO), 40–60w answer capsules & FAQ schema (AEO), empirical data citations & llms.txt (GEO), E-E-A-T credentials & freshness (AIO), and sub-second frictionless UX (SXO). Follow [guides/modern-search-disciplines-seo-aeo-geo-aio-sxo.md](guides/modern-search-disciplines-seo-aeo-geo-aio-sxo.md).
+
+
 ---
 
 ## 2. Three-Phase Execution Lifecycle
@@ -94,4 +98,7 @@ A project is only certified "SPS SEO Compliant" when:
 8. Valid `sitemap.xml`, `robots.txt`, and `llms.txt` are generated.
 9. Branded `og-image.svg` and `seo-score-badge.svg` are generated.
 10. Zero critical secret leaks or exposed files in public directories (`scripts/security-check.mjs`).
-11. `sps-seo-audit-report.md` (and `.sps/seo-audit.md` if applicable) is updated.
+11. Target keyword density is optimal (1.0%–2.5%) and prominent in Title, H1, and first 100 words (`scripts/keyword-check.mjs`).
+12. Zero redirect chains, loops, or link equity leakage on permanent URLs (`scripts/redirect-audit.mjs`).
+13. `sps-seo-audit-report.md` (and `.sps/seo-audit.md` if applicable) is updated.
+

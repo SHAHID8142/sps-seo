@@ -23,6 +23,13 @@ import { generateSerpPreview } from '../scripts/preview-serp.mjs';
 import { validateI18n } from '../scripts/i18n-seo.mjs';
 import { generateBadge } from '../scripts/badge.mjs';
 import { scanSecurityAndBestPractices } from '../scripts/security-check.mjs';
+import { analyzeKeywords } from '../scripts/keyword-check.mjs';
+import { analyzeTfIdf } from '../scripts/tfidf-analyzer.mjs';
+import { evaluateRankingProbability } from '../scripts/ranking-intel.mjs';
+import { optimizeSnippets } from '../scripts/snippet-optimizer.mjs';
+import { auditRedirects } from '../scripts/redirect-audit.mjs';
+import { analyzeBacklinks } from '../scripts/backlink-intel.mjs';
+import { compareSeo } from '../scripts/seo-compare.mjs';
 
 function createTempDir(prefix) {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -460,6 +467,163 @@ async function runTests() {
     assert(secResult.templates.deprecatedTagCount === 1, 'Flagged deprecated <center> tag');
   } finally {
     cleanupDir(secDir);
+  }
+
+  // TEST 16: Keyword Prominence & Density Analyzer
+  const kwDir = createTempDir('sps-seo-test-kw-');
+  try {
+    console.log('\nTest 16: Keyword Prominence & Density Analyzer');
+    fs.writeFileSync(path.join(kwDir, 'index.html'), `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Cloud Compute - High Speed Infrastructure</title>
+          <meta name="description" content="Deploy cloud compute nodes across 50 global edge regions." />
+        </head>
+        <body>
+          <main>
+            <h1>Cloud Compute Solutions</h1>
+            <p>Our cloud compute architecture empowers engineering teams with scalable compute instances and zero latency infrastructure.</p>
+            <img src="/banner.png" alt="Cloud Compute Cluster" />
+          </main>
+        </body>
+      </html>
+    `);
+
+    const kwResult = analyzeKeywords({ projectDir: kwDir, keyword: 'cloud compute', json: true });
+    assert(kwResult.pagesAnalyzed === 1, 'Analyzed 1 page for keywords');
+    assert(kwResult.pages[0].primaryCount >= 3, 'Counted at least 3 occurrences of target keyword');
+    assert(kwResult.pages[0].prominence.inTitle, 'Detected keyword in title tag');
+    assert(kwResult.pages[0].prominence.inH1, 'Detected keyword in H1 heading');
+    assert(kwResult.pages[0].prominence.inImageAlt, 'Detected keyword in image alt text');
+  } finally {
+    cleanupDir(kwDir);
+  }
+
+  // TEST 17: Algorithmic TF*IDF Semantic Analyzer
+  const tfidfDir = createTempDir('sps-seo-test-tfidf-');
+  try {
+    console.log('\nTest 17: Algorithmic TF*IDF Semantic Analyzer');
+    fs.writeFileSync(path.join(tfidfDir, 'page1.html'), `
+      <html><body><p>Enterprise cloud latency infrastructure benchmark for distributed systems.</p></body></html>
+    `);
+    fs.writeFileSync(path.join(tfidfDir, 'page2.html'), `
+      <html><body><p>Serverless edge compute workers with low latency and global replication.</p></body></html>
+    `);
+
+    const tfidfResult = analyzeTfIdf({ projectDir: tfidfDir, json: true });
+    assert(tfidfResult.documentsAnalyzed === 2, 'Parsed 2 documents for TF*IDF');
+    assert(tfidfResult.vocabularySize > 0, 'Extracted non-empty vocabulary');
+    assert(tfidfResult.globalTopTerms.length > 0, 'Computed global top authority terms');
+  } finally {
+    cleanupDir(tfidfDir);
+  }
+
+  // TEST 18: SERP Ranking Probability Engine
+  const rankDir = createTempDir('sps-seo-test-rank-');
+  try {
+    console.log('\nTest 18: SERP Ranking Probability Engine');
+    fs.writeFileSync(path.join(rankDir, 'index.html'), `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Cloud Compute Guide</title>
+        </head>
+        <body>
+          <main>
+            <h1>Cloud Compute Guide</h1>
+            <h2>How Cloud Compute Works</h2>
+            <p>Comprehensive guide to deploying scalable cloud compute instances across global regions.</p>
+            <ol><li>Step 1: Choose instance</li><li>Step 2: Deploy</li></ol>
+            <a href="/pricing">View Pricing</a>
+          </main>
+        </body>
+      </html>
+    `);
+
+    const rankResult = evaluateRankingProbability({ projectDir: rankDir, keyword: 'cloud compute', json: true });
+    assert(rankResult.pagesEvaluated === 1, 'Evaluated 1 page for ranking probability');
+    assert(rankResult.pages[0].probabilityScore > 30, 'Generated positive ranking probability score');
+    assert(rankResult.pages[0].breakdown.keywordProminence > 0, 'Awarded keyword prominence points');
+  } finally {
+    cleanupDir(rankDir);
+  }
+
+  // TEST 19: Featured Snippet & Answer Capsule Optimizer
+  const snippetDir = createTempDir('sps-seo-test-snip-');
+  try {
+    console.log('\nTest 19: Featured Snippet & Answer Capsule Optimizer');
+    fs.writeFileSync(path.join(snippetDir, 'index.html'), `
+      <!DOCTYPE html>
+      <html>
+        <body>
+          <h2>What is cloud compute?</h2>
+          <p>Cloud compute is a modern on-demand infrastructure delivery model providing scalable virtual servers, containerized workloads, high-speed storage, and raw processing power over secure global networks without requiring local hardware procurement, physical data center maintenance, or upfront capital expenditure for growing businesses worldwide.</p>
+          <ol><li>Configure instance</li><li>Deploy container</li></ol>
+        </body>
+      </html>
+    `);
+
+    const snipResult = optimizeSnippets({ projectDir: snippetDir, json: true });
+    assert(snipResult.totalQuestionHeadings === 1, 'Detected question-based heading');
+    assert(snipResult.totalOptimalCapsules === 1, 'Validated 40-60 word answer capsule');
+    assert(snipResult.findings[0].hasOrderedLists, 'Detected ordered list for procedural snippet');
+  } finally {
+    cleanupDir(snippetDir);
+  }
+
+  // TEST 20: Redirects, Chains & Trailing Slash Auditor
+  const redirDir = createTempDir('sps-seo-test-redir-');
+  try {
+    console.log('\nTest 20: Redirects, Chains & Trailing Slash Auditor');
+    const vercelConfig = {
+      redirects: [
+        { source: '/old-path', destination: '/new-path', permanent: true },
+        { source: '/temp-path', destination: '/target', permanent: false }
+      ]
+    };
+    fs.writeFileSync(path.join(redirDir, 'vercel.json'), JSON.stringify(vercelConfig, null, 2));
+
+    const redirResult = await auditRedirects({ projectDir: redirDir, json: true });
+    assert(redirResult.configRedirectCount === 2, 'Parsed 2 redirect rules from vercel.json');
+    const tempWarnings = redirResult.findings.filter(f => f.msg.includes('Temporary redirect'));
+    assert(tempWarnings.length === 1, 'Flagged temporary 302/307 redirect');
+  } finally {
+    cleanupDir(redirDir);
+  }
+
+  // TEST 21: Backlink Equity & Digital PR Engine
+  const backlinkDir = createTempDir('sps-seo-test-bl-');
+  try {
+    console.log('\nTest 21: Backlink Equity & Digital PR Engine');
+    fs.writeFileSync(path.join(backlinkDir, 'index.html'), `
+      <html><body><main><a href="https://external-resource.org">External Authority</a></main></body></html>
+    `);
+    fs.writeFileSync(path.join(backlinkDir, 'sps-seo-config.json'), '{"site":{"name":"CloudCorp","url":"https://cloudcorp.io"},"keywords":{"primary":"cloud compute"}}');
+
+    const blResult = analyzeBacklinks({ projectDir: backlinkDir, json: true });
+    assert(blResult.outboundSummary.totalOutbound === 1, 'Detected outbound link');
+    assert(blResult.unlinkedMentionQueries.length > 0, 'Generated unlinked brand mention search queries');
+    assert(blResult.outreachPitch.subject.includes('cloud compute'), 'Generated contextual PR pitch');
+  } finally {
+    cleanupDir(backlinkDir);
+  }
+
+  // TEST 22: Side-by-Side Competitive Benchmark
+  const dirA = createTempDir('sps-seo-test-compA-');
+  const dirB = createTempDir('sps-seo-test-compB-');
+  try {
+    console.log('\nTest 22: Side-by-Side Competitive Benchmark');
+    fs.writeFileSync(path.join(dirA, 'index.html'), `<html><head><title>Site A</title></head><body><main><h1>A</h1><p>Fast compute.</p></main></body></html>`);
+    fs.writeFileSync(path.join(dirB, 'index.html'), `<html><head><title>Site B</title></head><body><main><h1>B</h1><p>Enterprise compute.</p></main></body></html>`);
+
+    const compResult = await compareSeo({ pathA: dirA, pathB: dirB });
+    assert(Array.isArray(compResult.rows), 'Generated comparison rows');
+    assert(compResult.rows.length > 0, 'Rows count is greater than 0');
+  } finally {
+    cleanupDir(dirA);
+    cleanupDir(dirB);
   }
 
   console.log(`\n==============================================`);

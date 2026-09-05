@@ -1,7 +1,0 @@
-# Acme Software — Full Content
-
-> Generated companion to llms.txt. In production, replace this file with a build-time concatenation of all pages referenced in llms.txt (markdown source for each route, concatenated in order). Tools: see llmstxt.org → llms_txt2ctx.
-
-## Pages
-
-- Homepage: https://example.com.md

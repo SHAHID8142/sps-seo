@@ -63,4 +63,4 @@ Place this block inside the `<head>` section of every static HTML page:
 
 ## 2. Heading & Image Alt Audits
 - Exactly one `<h1>` per `.html` page.
-- All `<img>` tags must feature meaningful `alt="..."`.
+- All `<img alt="Illustration preview">` tags must feature meaningful `alt="..."`.

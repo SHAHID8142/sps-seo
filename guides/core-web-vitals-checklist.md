@@ -17,7 +17,7 @@ Google heavily weights page experience signals. Slow or unstable websites suffer
 ---
 
 ## 2. LCP Optimization Checklist (Target: ≤ 2.5s)
-- [ ] **Preload Hero Image:** If the LCP element is a hero image, add `<link rel="preload" as="image" href="..." fetchpriority="high">` or in Next.js use `<Image priority ... />`.
+- [ ] **Preload Hero Image:** If the LCP element is a hero image, add `<link rel="preload" as="image" href="..." fetchpriority="high">` or in Next.js use `<Image alt="Illustration preview" priority ... />`.
 - [ ] **Modern Image Formats:** Serve images in WebP or AVIF formats.
 - [ ] **Font Optimization:** Use `font-display: swap;` and preload key web fonts (`<link rel="preload" as="font" type="font/woff2" crossorigin>`).
 - [ ] **Eliminate Render-Blocking Scripts:** Defer or mark third-party scripts with `async` / `defer`.
@@ -32,7 +32,7 @@ Google heavily weights page experience signals. Slow or unstable websites suffer
 ---
 
 ## 4. CLS Optimization Checklist (Target: ≤ 0.1)
-- [ ] **Explicit Dimensions:** Always set `width` and `height` attributes on all `<img>` and `<video>` tags to reserve layout space.
+- [ ] **Explicit Dimensions:** Always set `width` and `height` attributes on all `<img alt="Illustration preview">` and `<video>` tags to reserve layout space.
 - [ ] **Dynamic Content Placeholders:** Reserve minimum height (`min-height`) for banners, dynamic ads, and cookie consent modals.
 - [ ] **Font Fallbacks:** Define matching font fallback metrics (`ascent-override`, `descent-override`, `size-adjust`) to avoid text layout jumping when custom fonts load.
 

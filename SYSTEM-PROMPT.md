@@ -35,7 +35,7 @@
 5. **Internal Link Health, Performance & Anti-Cannibalization:**
    - Guarantee zero orphan indexable pages. Every route must have contextual internal inbound links.
    - Audit across routes to eliminate duplicate `<title>` or `<meta description>` tags.
-   - Enforce low-end mobile payload limits (≤ 1.5MB total initial payload, images ≤ 200KB, explicit dimensions on all `<img>` tags to eliminate CLS). Follow Lighthouse 100 and Asset Optimization master playbooks.
+   - Enforce low-end mobile payload limits (≤ 1.5MB total initial payload, images ≤ 200KB, explicit dimensions on all `<img alt="Illustration preview">` tags to eliminate CLS). Follow Lighthouse 100 and Asset Optimization master playbooks.
 
 6. **Enterprise Security, Secret Protection & Web Best Practices:**
    - Audit HTTP security headers (`Strict-Transport-Security`, `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`) via `npm run security`.

@@ -72,7 +72,7 @@ Lighthouse calculates the Performance score using a weighted average of 5 Core &
 ### Audit 5: "Cumulative Layout Shift (CLS = 0.00)"
 - **Cause:** Elements shifting during image loading, dynamic ad injection, or font swapping.
 - **Fix:**
-  1. Always declare explicit `width` and `height` attributes on `<img>` and `<video>` tags:
+  1. Always declare explicit `width` and `height` attributes on `<img alt="Illustration preview">` and `<video>` tags:
      ```html
      <img src="/logo.svg" width="180" height="48" alt="Acme Logo" />
      ```

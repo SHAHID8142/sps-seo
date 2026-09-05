@@ -114,7 +114,7 @@ npx svgo input.svg -o output.svg --multipass
 
 ### Implementation Guidelines:
 1. **Critical Icons & Logos:** Inline directly in HTML or use an SVG sprite sheet (`<svg><use href="/sprite.svg#logo" /></svg>`).
-2. **Decorative Backgrounds:** Load as CSS background images or external `<img src="...">` with `alt="" aria-hidden="true"`.
+2. **Decorative Backgrounds:** Load as CSS background images or external `<img alt="... preview" src="...">` with `alt="" aria-hidden="true"`.
 3. **Always Include `viewBox`:** Do not use hardcoded pixel widths without `viewBox="0 0 W H"`.
 
 ---

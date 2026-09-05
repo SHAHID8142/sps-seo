@@ -47,7 +47,7 @@ This guide details the exact code modification workflows for Phase 2.
 3. **Semantic Landmarks:** Ensure the page contains `<main>`, `<header>`, `<nav>`, and `<footer>` containers.
 
 ### Step 5: Image Alt Text Remediation
-1. Inspect every `<img>` or framework `<Image />` flagged by `scripts/audit.mjs`.
+1. Inspect every `<img alt="Illustration preview">` or framework `<Image alt="Illustration preview" />` flagged by `scripts/audit.mjs`.
 2. Write concise, descriptive `alt` text explaining what the image depicts in relation to the section content.
 3. *Rule:* Never keyword-stuff `alt` text (e.g. `alt="best cloud software cloud tool"` is prohibited; use `alt="Acme Cloud multi-cluster topology dashboard displaying active pods"`).
 

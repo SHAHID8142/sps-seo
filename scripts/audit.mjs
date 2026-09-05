@@ -211,6 +211,23 @@ function analyzeContent(filePath, content) {
   const hasJsonLd = /<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi.test(content) ||
                     /type=["']application\/ld\+json["']/i.test(content);
 
+  // Check for dangerous noindex/nofollow tags
+  const hasNoindex = /name=["']robots["'][^>]*content=["'][^"']*noindex/i.test(content) ||
+                     /robots:\s*{[^}]*index:\s*false/i.test(content);
+  const hasNofollow = /name=["']robots["'][^>]*content=["'][^"']*nofollow/i.test(content) ||
+                      /robots:\s*{[^}]*follow:\s*false/i.test(content);
+
+  // Check for insecure external links: target="_blank" missing rel="noopener noreferrer"
+  const targetBlankRegex = /<a\b([^>]*target=["']_blank["'][^>]*?)>/gi;
+  let insecureLinksCount = 0;
+  while ((match = targetBlankRegex.exec(content)) !== null) {
+    const attrs = match[1];
+    const hasRel = /rel=["'][^"']*(?:noopener|noreferrer)[^"']*["']/i.test(attrs);
+    if (!hasRel) {
+      insecureLinksCount++;
+    }
+  }
+
   // Semantic landmarks
   const hasMain = /<main\b/i.test(content);
   const hasHeader = /<header\b/i.test(content);
@@ -227,6 +244,9 @@ function analyzeContent(filePath, content) {
     og: { title: ogTitle, desc: ogDesc, image: ogImage, url: ogUrl },
     twitter: { card: twitterCard },
     hasJsonLd,
+    hasNoindex,
+    hasNofollow,
+    insecureLinksCount,
     headings: {
       total: headings.length,
       h1Count,
@@ -255,10 +275,26 @@ export async function runAudit(options = {}) {
   const framework = detectFramework(projectDir);
 
   // Global file checks
-  const robotsExists = fs.existsSync(path.join(projectDir, 'robots.txt')) ||
-                       fs.existsSync(path.join(projectDir, 'public/robots.txt')) ||
+  const robotsPath = [
+    path.join(projectDir, 'robots.txt'),
+    path.join(projectDir, 'public/robots.txt')
+  ].find(p => fs.existsSync(p));
+
+  const robotsExists = !!robotsPath ||
                        fs.existsSync(path.join(projectDir, 'app/robots.ts')) ||
                        fs.existsSync(path.join(projectDir, 'src/app/robots.ts'));
+
+  let hasDangerousRobots = false;
+  if (robotsPath) {
+    try {
+      const robotsContent = fs.readFileSync(robotsPath, 'utf8');
+      if (/User-agent:\s*\*\s*[\r\n]+Disallow:\s*\/\s*$/im.test(robotsContent)) {
+        hasDangerousRobots = true;
+      }
+    } catch {
+      // ignore
+    }
+  }
 
   const sitemapExists = fs.existsSync(path.join(projectDir, 'sitemap.xml')) ||
                         fs.existsSync(path.join(projectDir, 'public/sitemap.xml')) ||
@@ -270,6 +306,11 @@ export async function runAudit(options = {}) {
 
   const configExists = fs.existsSync(path.join(projectDir, 'sps-seo-config.json')) ||
                        fs.existsSync(path.join(projectDir, '.sps/seo.json'));
+
+  const faviconExists = [
+    'favicon.ico', 'public/favicon.ico', 'app/favicon.ico', 'src/app/favicon.ico',
+    'public/favicon.svg', 'public/icon.svg', 'apple-touch-icon.png'
+  ].some(rel => fs.existsSync(path.join(projectDir, rel)));
 
   // Collect and parse files
   const files = collectFiles(projectDir);
@@ -388,6 +429,13 @@ export async function runAudit(options = {}) {
   if (hasAnyJsonLd) cat4Score += 8;
   if (llmsExists) cat4Score += 7;
 
+  // Deduct if dangerous robots or severe noindex
+  const noindexPages = analyses.filter(a => a.hasNoindex).map(a => a.file);
+  const totalInsecureLinks = analyses.reduce((sum, a) => sum + (a.insecureLinksCount || 0), 0);
+
+  if (hasDangerousRobots) cat1Score = Math.max(0, cat1Score - 12);
+  if (!faviconExists) cat1Score = Math.max(0, cat1Score - 2);
+
   const totalScore = Math.min(100, Math.max(0, cat1Score + cat2Score + cat3Score + cat4Score));
 
   let grade = 'F';
@@ -402,7 +450,17 @@ export async function runAudit(options = {}) {
     score: totalScore,
     grade: grade,
     categories: {
-      technical: { score: cat1Score, max: 25, robots: robotsExists, sitemap: sitemapExists, config: configExists },
+      technical: {
+        score: cat1Score,
+        max: 25,
+        robots: robotsExists,
+        sitemap: sitemapExists,
+        config: configExists,
+        favicon: faviconExists,
+        dangerousRobots: hasDangerousRobots,
+        noindexCount: noindexPages.length,
+        insecureLinksCount: totalInsecureLinks
+      },
       metadata: { score: cat2Score, max: 25, title: !!aggregatedTitle || hasMetadataObject, description: !!aggregatedDesc || hasMetadataObject, canonical: !!aggregatedCanonical || hasMetadataObject, og: hasAnyOG || hasMetadataObject, twitter: hasAnyTwitter || hasMetadataObject },
       semantics: { score: cat3Score, max: 25, h1Issues: totalH1Issues, skippedHeadings: totalSkippedHeadings, hasSemantics },
       schemaAndAi: { score: cat4Score, max: 25, jsonLd: hasAnyJsonLd, llmsTxt: llmsExists, totalImages, missingAlt: totalMissingAlt, emptyAlt: totalEmptyAlt }
@@ -428,14 +486,18 @@ export async function runAudit(options = {}) {
   console.log(`${colors.bold}Audit Score:${colors.reset}      ${scoreColor}${colors.bold}${totalScore}/100 (Grade: ${grade})${colors.reset}\n`);
 
   console.log(`${colors.bold}Category Breakdown:${colors.reset}`);
-  console.log(`  1. Technical & Crawlability:      ${cat1Score}/25 pts [Robots: ${robotsExists ? '✓' : '✗'}, Sitemap: ${sitemapExists ? '✓' : '✗'}, Config: ${configExists ? '✓' : '✗'}]`);
+  console.log(`  1. Technical & Crawlability:      ${cat1Score}/25 pts [Robots: ${robotsExists ? '✓' : '✗'}, Sitemap: ${sitemapExists ? '✓' : '✗'}, Config: ${configExists ? '✓' : '✗'}, Favicon: ${faviconExists ? '✓' : '✗'}]`);
   console.log(`  2. Meta Tags & Social Previews:   ${cat2Score}/25 pts [Title: ${aggregatedTitle || hasMetadataObject ? '✓' : '✗'}, Desc: ${aggregatedDesc || hasMetadataObject ? '✓' : '✗'}, Canonical: ${aggregatedCanonical || hasMetadataObject ? '✓' : '✗'}, OG: ${hasAnyOG || hasMetadataObject ? '✓' : '✗'}]`);
   console.log(`  3. Semantic Hierarchy (H1-H6):    ${cat3Score}/25 pts [H1 Anomalies: ${totalH1Issues}, Skipped Levels: ${totalSkippedHeadings}]`);
   console.log(`  4. Schema & AI Search Readiness:  ${cat4Score}/25 pts [JSON-LD: ${hasAnyJsonLd ? '✓' : '✗'}, llms.txt: ${llmsExists ? '✓' : '✗'}, Images: ${totalImages} (Missing Alt: ${totalMissingAlt})]`);
 
   console.log(`\n${colors.bold}Actionable Findings:${colors.reset}`);
+  if (hasDangerousRobots) console.log(`  ${colors.red}🚨 CRITICAL: robots.txt blocks all crawlers (Disallow: /)${colors.reset}`);
+  if (noindexPages.length > 0) console.log(`  ${colors.red}⚠️ Production 'noindex' tag detected in: ${noindexPages.join(', ')}${colors.reset}`);
   if (!robotsExists) console.log(`  ${colors.red}✗ Missing robots.txt${colors.reset} - Crawlers have no baseline indexing boundaries.`);
   if (!sitemapExists) console.log(`  ${colors.red}✗ Missing sitemap.xml${colors.reset} - Search engines cannot efficiently discover deep URLs.`);
+  if (!faviconExists) console.log(`  ${colors.yellow}! Missing favicon / app icon${colors.reset} - Search engine SERP snippet branding compromised.`);
+  if (totalInsecureLinks > 0) console.log(`  ${colors.yellow}! Insecure external links (${totalInsecureLinks} detected)${colors.reset} - target="_blank" without rel="noopener noreferrer".`);
   if (!llmsExists) console.log(`  ${colors.yellow}! Missing llms.txt${colors.reset} - Modern LLMs (ChatGPT, Claude, Perplexity) lack a structured knowledge index.`);
   if (!hasAnyJsonLd) console.log(`  ${colors.red}✗ Missing Schema.org JSON-LD${colors.reset} - No rich snippets eligibility in Google SERPs.`);
   if (totalMissingAlt > 0) console.log(`  ${colors.yellow}! Missing Image Alt Attributes (${totalMissingAlt} detected)${colors.reset} - Impairs accessibility and Google Image indexing.`);

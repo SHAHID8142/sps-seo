@@ -59,6 +59,10 @@ const COMMANDS = {
   'ecom': 'ecommerce-seo.mjs',
   'local': 'local-seo.mjs',
   'dup': 'duplicate-content.mjs',
+  'crawl': 'crawler.mjs',
+  'pagespeed': 'pagespeed.mjs',
+  'gsc': 'gsc.mjs',
+  'logs': 'log-analyzer.mjs',
   'badge': 'badge.mjs',
   'sync-config': 'sync-config.mjs',
   'ping-indexnow': 'ping-indexnow.mjs',
@@ -97,6 +101,12 @@ Verticals:
   news              News SEO (NewsArticle, news sitemap, freshness)
   ecom              E-commerce SEO (Product schema, pagination, offers)
   local             Local SEO (LocalBusiness, NAP, geo)
+
+Live-Site & Intelligence:
+  crawl             Polite robots-aware live crawler (status/TTFB/soft404/SPA)
+  pagespeed         PageSpeed Insights & CrUX field-data integration
+  gsc               Google Search Console report (CSV export or API)
+  logs              Server access-log analyzer (crawl budget & 404 hotspots)
 
 Quality:
   perf              Core Web Vitals & asset budget scanner

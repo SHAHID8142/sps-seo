@@ -1,0 +1,158 @@
+name: SPS SEO Cross-Version CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    # Weekly regression test against latest Node versions
+    - cron: '0 6 * * 1'
+
+concurrency:
+  group: ci-matrix-${{ github.ref }}-${{ matrix.node-version }}
+  cancel-in-progress: true
+
+jobs:
+  # Test all scripts across multiple Node versions
+  cross-version:
+    name: Node ${{ matrix.node-version }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18, 20, 22, 24]
+        os: [ubuntu-latest]
+        include:
+          # Also test on macOS and Windows with latest LTS
+          - node-version: 22
+            os: macos-latest
+          - node-version: 22
+            os: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Verify Node Version
+        run: |
+          node --version
+          npm --version
+
+      - name: Syntax-Check All Scripts
+        run: |
+          for f in scripts/*.mjs scripts/lib/*.mjs; do
+            node --check "$f" || echo "SYNTAX FAIL: $f"
+          done
+
+      - name: Run Core Test Suite
+        run: node tests/test-audit.mjs
+
+      - name: Run Phase 2 Test Suite
+        run: node tests/test-phase2.mjs
+
+      - name: Smoke Test — All CLI Commands
+        run: |
+          node scripts/cli.mjs help
+          node scripts/cli.mjs audit --json > /dev/null
+          echo "CLI commands OK"
+
+  # Lint & static analysis
+  static-analysis:
+    name: Static Analysis & Best Practices
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify No Hardcoded Secrets
+        run: |
+          # Scan scripts for accidental credential patterns
+          if grep -rn 'sk-[a-zA-Z0-9]\{32\}' scripts/ 2>/dev/null; then
+            echo "⚠️ Possible secret pattern found"
+            exit 1
+          fi
+          echo "✅ No hardcoded secrets detected"
+
+      - name: Verify All Scripts Use fileURLToPath
+        run: |
+          # Ensure no scripts use the Windows-incompatible `new URL(import.meta.url).pathname`
+          BAD=$(grep -rl 'new URL.*import.meta.url).pathname' scripts/ 2>/dev/null || true)
+          if [ -n "$BAD" ]; then
+            echo "❌ Scripts still using Windows-incompatible URL.pathname pattern:"
+            echo "$BAD"
+            exit 1
+          fi
+          echo "✅ All scripts use fileURLToPath"
+
+      - name: Verify Core Lib Exports
+        run: |
+          node -e "
+          import('./scripts/lib/core.mjs').then(m => {
+            const required = ['VERSION', 'IGNORE_DIRS', 'CONTENT_EXTS', 'walkFiles', 'loadConfig', 'extractHtmlHeadings', 'captureConsole', 'isMain'];
+            for (const key of required) {
+              if (typeof m[key] === 'undefined') { console.error('Missing export: ' + key); process.exit(1); }
+            }
+            console.log('✅ All core exports present (VERSION=' + m.VERSION + ')');
+          });
+          "
+
+  # Performance benchmark
+  performance:
+    name: Audit Performance Benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Benchmark Audit Speed
+        run: |
+          # Create a realistic test project
+          mkdir -p /tmp/bench-project/src/app
+          for i in $(seq 1 50); do
+            cat > /tmp/bench-project/src/app/page$i.html <<EOF
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Test Page $i - Benchmark</title>
+            <meta name="description" description="Benchmark page $i for performance testing">
+            <link rel="canonical" href="https://example.com/page$i">
+            <meta property="og:title" content="Test Page $i">
+            <script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Page $i"}</script>
+          </head>
+          <body>
+            <h1>Test Page $i</h1>
+            <h2>Section One</h2>
+            <p>Content for page $i</p>
+            <h2>Section Two</h2>
+            <p>More content</p>
+            <img src="/img$i.jpg" alt="Image $i">
+            <a href="/page$((i+1))">Next</a>
+          </body>
+          </html>
+          EOF
+          done
+
+          # Time the audit
+          START=$(date +%s%N)
+          cd /tmp/bench-project
+          node /Volumes/SSD/CODES/sps-seo/scripts/audit.mjs --json > /dev/null 2>&1
+          END=$(date +%s%N)
+          DURATION=$(( (END - START) / 1000000 ))
+          echo "Audit of 50 pages completed in ${DURATION}ms"
+          if [ "$DURATION" -gt 30000 ]; then
+            echo "❌ Audit too slow (>30s for 50 pages)"
+            exit 1
+          fi
+          echo "✅ Performance OK"

@@ -63,6 +63,8 @@ const COMMANDS = {
   'pagespeed': 'pagespeed.mjs',
   'gsc': 'gsc.mjs',
   'logs': 'log-analyzer.mjs',
+  'monorepo': 'monorepo-detect.mjs',
+  'mcp': 'mcp-server.mjs',
   'badge': 'badge.mjs',
   'sync-config': 'sync-config.mjs',
   'ping-indexnow': 'ping-indexnow.mjs',
@@ -107,6 +109,8 @@ Live-Site & Intelligence:
   pagespeed         PageSpeed Insights & CrUX field-data integration
   gsc               Google Search Console report (CSV export or API)
   logs              Server access-log analyzer (crawl budget & 404 hotspots)
+  monorepo          Detect monorepo structure & enumerate packages
+  mcp               Start MCP server (exposes all tools to AI agents)
 
 Quality:
   perf              Core Web Vitals & asset budget scanner

@@ -49,6 +49,8 @@
     "pagespeed": "node scripts/pagespeed.mjs",
     "gsc": "node scripts/gsc.mjs",
     "logs": "node scripts/log-analyzer.mjs",
+    "monorepo": "node scripts/monorepo-detect.mjs",
+    "mcp": "node scripts/mcp-server.mjs",
     "badge": "node scripts/badge.mjs",
     "sync-config": "node scripts/sync-config.mjs",
     "ping-indexnow": "node scripts/ping-indexnow.mjs",

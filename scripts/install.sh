@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # SPS SEO Skill Installer
-# Version: 1.0.0
+# Version: 1.4.0
 # Installs SPS SEO into global or local agent skills directories.
 
 set -euo pipefail

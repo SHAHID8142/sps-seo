@@ -126,7 +126,7 @@ jobs:
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Test Page $i - Benchmark</title>
-            <meta name="description" description="Benchmark page $i for performance testing">
+            <meta name="description" content="Benchmark page $i for performance testing">
             <link rel="canonical" href="https://example.com/page$i">
             <meta property="og:title" content="Test Page $i">
             <script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Page $i"}</script>

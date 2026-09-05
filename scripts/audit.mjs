@@ -304,6 +304,14 @@ export async function runAudit(options = {}) {
   const llmsExists = fs.existsSync(path.join(projectDir, 'llms.txt')) ||
                      fs.existsSync(path.join(projectDir, 'public/llms.txt'));
 
+  const llmsFullExists = fs.existsSync(path.join(projectDir, 'llms-full.txt')) ||
+                         fs.existsSync(path.join(projectDir, 'public/llms-full.txt'));
+
+  // AI bot policy check (2026): verify the robots.txt allows the
+  // citation-capable bots and (optionally) blocks training bots.
+  // Returns the policy verdict plus which bots are missing/blocked.
+  const aiBotPolicy = analyzeAiBotPolicy(robotsPath);
+
   const configExists = fs.existsSync(path.join(projectDir, 'sps-seo-config.json')) ||
                        fs.existsSync(path.join(projectDir, '.sps/seo.json'));
 
@@ -428,6 +436,9 @@ export async function runAudit(options = {}) {
 
   if (hasAnyJsonLd) cat4Score += 8;
   if (llmsExists) cat4Score += 7;
+  // Bonus: llms-full.txt companion (Aug 2026 standard) — +2 if present, capped
+  // so it never pushes past 25/25 in this category.
+  if (llmsFullExists) cat4Score = Math.min(25, cat4Score + 2);
 
   // Deduct if dangerous robots or severe noindex
   const noindexPages = analyses.filter(a => a.hasNoindex).map(a => a.file);
@@ -435,6 +446,11 @@ export async function runAudit(options = {}) {
 
   if (hasDangerousRobots) cat1Score = Math.max(0, cat1Score - 12);
   if (!faviconExists) cat1Score = Math.max(0, cat1Score - 2);
+  // Heavy penalty: blocking a citation bot silently removes you from that
+  // engine's answers. -6 per citation bot blocked (capped at -18).
+  if (aiBotPolicy.blockedCitationBots.length > 0) {
+    cat1Score = Math.max(0, cat1Score - Math.min(18, aiBotPolicy.blockedCitationBots.length * 6));
+  }
 
   const totalScore = Math.min(100, Math.max(0, cat1Score + cat2Score + cat3Score + cat4Score));
 
@@ -459,11 +475,12 @@ export async function runAudit(options = {}) {
         favicon: faviconExists,
         dangerousRobots: hasDangerousRobots,
         noindexCount: noindexPages.length,
-        insecureLinksCount: totalInsecureLinks
+        insecureLinksCount: totalInsecureLinks,
+        aiBotPolicy: aiBotPolicy
       },
       metadata: { score: cat2Score, max: 25, title: !!aggregatedTitle || hasMetadataObject, description: !!aggregatedDesc || hasMetadataObject, canonical: !!aggregatedCanonical || hasMetadataObject, og: hasAnyOG || hasMetadataObject, twitter: hasAnyTwitter || hasMetadataObject },
       semantics: { score: cat3Score, max: 25, h1Issues: totalH1Issues, skippedHeadings: totalSkippedHeadings, hasSemantics },
-      schemaAndAi: { score: cat4Score, max: 25, jsonLd: hasAnyJsonLd, llmsTxt: llmsExists, totalImages, missingAlt: totalMissingAlt, emptyAlt: totalEmptyAlt }
+      schemaAndAi: { score: cat4Score, max: 25, jsonLd: hasAnyJsonLd, llmsTxt: llmsExists, llmsFullTxt: llmsFullExists, totalImages, missingAlt: totalMissingAlt, emptyAlt: totalEmptyAlt }
     },
     filesScanned: analyses.length,
     analyses
@@ -489,16 +506,20 @@ export async function runAudit(options = {}) {
   console.log(`  1. Technical & Crawlability:      ${cat1Score}/25 pts [Robots: ${robotsExists ? '✓' : '✗'}, Sitemap: ${sitemapExists ? '✓' : '✗'}, Config: ${configExists ? '✓' : '✗'}, Favicon: ${faviconExists ? '✓' : '✗'}]`);
   console.log(`  2. Meta Tags & Social Previews:   ${cat2Score}/25 pts [Title: ${aggregatedTitle || hasMetadataObject ? '✓' : '✗'}, Desc: ${aggregatedDesc || hasMetadataObject ? '✓' : '✗'}, Canonical: ${aggregatedCanonical || hasMetadataObject ? '✓' : '✗'}, OG: ${hasAnyOG || hasMetadataObject ? '✓' : '✗'}]`);
   console.log(`  3. Semantic Hierarchy (H1-H6):    ${cat3Score}/25 pts [H1 Anomalies: ${totalH1Issues}, Skipped Levels: ${totalSkippedHeadings}]`);
-  console.log(`  4. Schema & AI Search Readiness:  ${cat4Score}/25 pts [JSON-LD: ${hasAnyJsonLd ? '✓' : '✗'}, llms.txt: ${llmsExists ? '✓' : '✗'}, Images: ${totalImages} (Missing Alt: ${totalMissingAlt})]`);
+  console.log(`  4. Schema & AI Search Readiness:  ${cat4Score}/25 pts [JSON-LD: ${hasAnyJsonLd ? '✓' : '✗'}, llms.txt: ${llmsExists ? '✓' : '✗'}, llms-full.txt: ${llmsFullExists ? '✓' : '○ bonus'}, Images: ${totalImages} (Missing Alt: ${totalMissingAlt})]`);
 
   console.log(`\n${colors.bold}Actionable Findings:${colors.reset}`);
   if (hasDangerousRobots) console.log(`  ${colors.red}🚨 CRITICAL: robots.txt blocks all crawlers (Disallow: /)${colors.reset}`);
+  if (aiBotPolicy.blockedCitationBots.length > 0) {
+    console.log(`  ${colors.red}🚨 CITATION BLOCKED: ${aiBotPolicy.blockedCitationBots.length} AI citation bot(s) blocked in robots.txt: ${aiBotPolicy.blockedCitationBots.join(', ')}. These engines literally cannot cite your site. Unblock them.${colors.reset}`);
+  }
   if (noindexPages.length > 0) console.log(`  ${colors.red}⚠️ Production 'noindex' tag detected in: ${noindexPages.join(', ')}${colors.reset}`);
   if (!robotsExists) console.log(`  ${colors.red}✗ Missing robots.txt${colors.reset} - Crawlers have no baseline indexing boundaries.`);
   if (!sitemapExists) console.log(`  ${colors.red}✗ Missing sitemap.xml${colors.reset} - Search engines cannot efficiently discover deep URLs.`);
   if (!faviconExists) console.log(`  ${colors.yellow}! Missing favicon / app icon${colors.reset} - Search engine SERP snippet branding compromised.`);
   if (totalInsecureLinks > 0) console.log(`  ${colors.yellow}! Insecure external links (${totalInsecureLinks} detected)${colors.reset} - target="_blank" without rel="noopener noreferrer".`);
   if (!llmsExists) console.log(`  ${colors.yellow}! Missing llms.txt${colors.reset} - Modern LLMs (ChatGPT, Claude, Perplexity) lack a structured knowledge index.`);
+  if (llmsExists && !llmsFullExists) console.log(`  ${colors.cyan}ℹ llms-full.txt not detected — optional Aug 2026 companion for full-content agent ingestion. Run \`npm run sitemap\` to scaffold.${colors.reset}`);
   if (!hasAnyJsonLd) console.log(`  ${colors.red}✗ Missing Schema.org JSON-LD${colors.reset} - No rich snippets eligibility in Google SERPs.`);
   if (totalMissingAlt > 0) console.log(`  ${colors.yellow}! Missing Image Alt Attributes (${totalMissingAlt} detected)${colors.reset} - Impairs accessibility and Google Image indexing.`);
   if (!configExists) console.log(`  ${colors.blue}ℹ Missing sps-seo-config.json${colors.reset} - Initialize config using sps-seo-config.example.json.`);
@@ -580,6 +601,91 @@ function writeMarkdownReport(report, projectDir) {
   } catch (e) {
     console.error('Failed to write audit report markdown:', e.message);
   }
+}
+
+// 5. AI bot policy analyzer (2026-correct)
+//
+// Bots that MUST be allowed if you want citations from that engine.
+// Bots that MAY be blocked to opt out of training data collection.
+const CITATION_BOTS = new Set([
+  'OAI-SearchBot',     // OpenAI ChatGPT search citations
+  'ChatGPT-User',      // OpenAI user-triggered fetches
+  'ClaudeBot',         // Anthropic Claude retrieval
+  'anthropic-ai',      // Anthropic legacy token
+  'PerplexityBot',     // Perplexity
+  'Bingbot',           // Microsoft Copilot (Bing)
+]);
+
+const TRAINING_BOTS = new Set([
+  'GPTBot',            // OpenAI training
+  'CCBot',             // Common Crawl training
+  'Google-Extended',   // Google Gemini training only (does NOT affect AIO/AI Mode)
+  'Bytespider',        // ByteDance training
+]);
+
+function analyzeAiBotPolicy(robotsPath) {
+  const result = {
+    hasRobotsTxt: !!robotsPath,
+    blockedCitationBots: [],
+    allowedTrainingBots: [],
+    policyVerdict: 'unknown',
+  };
+
+  if (!robotsPath) return result;
+
+  let content;
+  try {
+    content = fs.readFileSync(robotsPath, 'utf8');
+  } catch {
+    return result;
+  }
+
+  // Parse each User-agent block: the first Allow/Disallow after each
+  // User-agent token applies to that token.
+  const blocks = content.split(/User-agent\s*:\s*/i).slice(1);
+  const tokenRules = new Map(); // token -> 'allow' | 'disallow'
+  for (const block of blocks) {
+    const lines = block.split(/\r?\n/);
+    const token = lines.shift().trim();
+    if (!token) continue;
+    let rule = null;
+    for (const line of lines) {
+      const m = /^\s*(Allow|Disallow)\s*:\s*(\S*)/i.exec(line);
+      if (m && m[2]) {
+        rule = m[1].toLowerCase() === 'allow' ? 'allow' : 'disallow';
+        break; // first non-empty rule wins per bot
+      }
+    }
+    // Wildcard block
+    if (token === '*') {
+      for (const [bot, _] of [...tokenRules, ...CITATION_BOTS, ...TRAINING_BOTS]) {
+        if (!tokenRules.has(bot) && rule) tokenRules.set(bot, rule);
+      }
+      // Wildcard does NOT retroactively set already-specific tokens
+    } else {
+      tokenRules.set(token, rule);
+    }
+  }
+
+  for (const bot of CITATION_BOTS) {
+    const rule = tokenRules.get(bot);
+    if (rule === 'disallow') result.blockedCitationBots.push(bot);
+  }
+  for (const bot of TRAINING_BOTS) {
+    const rule = tokenRules.get(bot);
+    if (rule === 'allow') result.allowedTrainingBots.push(bot);
+  }
+
+  // Verdict
+  if (result.blockedCitationBots.length > 0) {
+    result.policyVerdict = 'blocked-citation-bot';
+  } else if (result.allowedTrainingBots.length > 0 && result.blockedCitationBots.length === 0) {
+    result.policyVerdict = 'max-visibility';
+  } else {
+    result.policyVerdict = 'cite-dont-train';
+  }
+
+  return result;
 }
 
 // Auto-run if executed directly

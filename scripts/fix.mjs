@@ -81,7 +81,48 @@ export async function runAutoFix(options = {}) {
       desc: 'Generate compliant robots.txt with AI bot rules',
       execute: () => {
         const baseUrl = config.site?.url || 'https://example.com';
-        const content = `# SPS SEO robots.txt\nUser-agent: *\nAllow: /\n\nUser-agent: GPTBot\nAllow: /\n\nUser-agent: ClaudeBot\nAllow: /\n\nUser-agent: PerplexityBot\nAllow: /\n\nSitemap: ${baseUrl.replace(/\/$/, '')}/sitemap.xml\n`;
+        // Default to "cite but don't train" — block GPTBot/CCBot,
+        // allow OAI-SearchBot/Claude/Perplexity so engines can cite us.
+        const content = `# SPS SEO robots.txt
+# Policy: cite-dont-train (set technical.aiBotPolicy in sps-seo-config.json to override)
+User-agent: *
+Allow: /
+
+# AI search / citation bots — allow so engines can cite us
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+# Gemini training only — does NOT affect Google AI Overviews / AI Mode
+User-agent: Google-Extended
+Allow: /
+
+# Training-only crawlers — block to opt out of training data collection
+User-agent: GPTBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+Sitemap: ${baseUrl.replace(/\/$/, '')}/sitemap.xml
+`;
         fs.writeFileSync(robotsPath, content, 'utf8');
       }
     });

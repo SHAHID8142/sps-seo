@@ -20,7 +20,7 @@ Read [METHOD-CARD.md](METHOD-CARD.md) before executing any strategy.
 2. **Real-Time Knowledge Mandate:** Initiate a web search to fetch the latest Google Core Updates, Spam Updates, and indexing protocols before finalizing on-page recommendations.
 3. **Framework Agnostic:** Dynamically inspect `package.json` and project files to identify whether the target is Next.js (App or Pages Router), Astro, Vite/React SPA, Nuxt, SvelteKit, or raw HTML.
 4. **Deterministic Scoring:** Rely on the objective 100-point audit engine (`scripts/audit.mjs`). Never invent or estimate subjective audit scores.
-5. **Asset Budget & CWV Standards:** Enforce low-end mobile payload limits (≤ 1.5MB total initial payload, images ≤ 200KB, explicit dimensions on all `<img>` tags to eliminate CLS) via `scripts/perf-budget.mjs`.
+5. **Asset Budget & CWV Standards:** Enforce low-end mobile payload limits (≤ 1.5MB total initial payload, images ≤ 200KB, explicit dimensions on all `<img>` tags to eliminate CLS) via `scripts/perf-budget.mjs`. Consult [guides/asset-optimization-master.md](guides/asset-optimization-master.md), [guides/lighthouse-100-playbook.md](guides/lighthouse-100-playbook.md), and [guides/third-party-scripts-strategy.md](guides/third-party-scripts-strategy.md).
 6. **Internal Link Health:** Never leave orphan routes; enforce contextual, descriptive anchor texts (`scripts/internal-links.mjs`).
 7. **No Cannibalization:** Ensure each route targets distinct search queries without overlapping title tags (`scripts/cannibalization.mjs`).
 8. **Dual-Memory Synchronization:** Maintain project SEO settings in `sps-seo-config.json` and synchronize with `./.sps/seo.json` when the SPS workflow (`.sps/`) is present.
@@ -95,7 +95,9 @@ Read [METHOD-CARD.md](METHOD-CARD.md) before executing any strategy.
    ```
 6. **Structural & Accessibility Verification:**
    - Verify single `<h1>` per page, sequential heading hierarchy, and descriptive alt attributes.
-7. **Verification DoD:** Re-run `npm run audit`. Confirm score is **≥ 90/100 (Grade A)**.
+7. **Performance & Core Web Vitals Optimization:**
+   - Enforce sub-second LCP, zero CLS, and <200ms INP using [guides/lighthouse-100-playbook.md](guides/lighthouse-100-playbook.md), [guides/asset-optimization-master.md](guides/asset-optimization-master.md), and [guides/third-party-scripts-strategy.md](guides/third-party-scripts-strategy.md).
+8. **Verification DoD:** Re-run `npm run audit`. Confirm score is **≥ 90/100 (Grade A)**.
 
 ---
 
@@ -135,3 +137,13 @@ Guide the user through [guides/phase3-external-seo.md](guides/phase3-external-se
 | `npm run ping-indexnow` | Instantly pings IndexNow API with updated routes |
 | `npm run sync-config` | Syncs `sps-seo-config.json` <-> `.sps/seo.json` |
 | `npm test` | Runs the automated test suite |
+
+---
+
+## 📚 Master Optimization & Performance Playbooks
+
+- **[Lighthouse 100/100 Playbook](guides/lighthouse-100-playbook.md):** Exhaustive checklist and architectural patterns for achieving perfect 100/100 scores across Performance, Accessibility, Best Practices, and SEO.
+- **[Asset Optimization Master Guide](guides/asset-optimization-master.md):** AVIF/WebP next-gen compression, responsive `srcset`, WOFF2 font subsetting, and zero-CLS font metric overrides.
+- **[Third-Party Scripts Strategy](guides/third-party-scripts-strategy.md):** Offloading analytics/trackers to Web Workers with Partytown, facade components for YouTube/maps, and non-blocking tag injection.
+- **[Caching & Edge CDN Headers Guide](guides/caching-and-headers-guide.md):** `Cache-Control: immutable`, stale-while-revalidate, Brotli/Zstandard compression, and security headers.
+

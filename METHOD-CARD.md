@@ -34,6 +34,7 @@
 - Initial payload must not exceed 1.5MB total asset weight.
 - Individual image assets must not exceed 200KB.
 - All `<img>` tags must feature explicit `width` and `height` dimensions to prevent layout shifts.
+- Follow master guides: [guides/asset-optimization-master.md](guides/asset-optimization-master.md), [guides/lighthouse-100-playbook.md](guides/lighthouse-100-playbook.md), and [guides/third-party-scripts-strategy.md](guides/third-party-scripts-strategy.md).
 
 ### Law 6: Internal Link Architecture & Zero Orphans
 - Every indexable page must have at least one incoming contextual internal link (`scripts/internal-links.mjs`).

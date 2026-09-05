@@ -35,7 +35,7 @@
 5. **Internal Link Health, Performance & Anti-Cannibalization:**
    - Guarantee zero orphan indexable pages. Every route must have contextual internal inbound links.
    - Audit across routes to eliminate duplicate `<title>` or `<meta description>` tags.
-   - Enforce low-end mobile payload limits (≤ 1.5MB total initial payload, images ≤ 200KB, explicit dimensions on all `<img>` tags to eliminate CLS).
+   - Enforce low-end mobile payload limits (≤ 1.5MB total initial payload, images ≤ 200KB, explicit dimensions on all `<img>` tags to eliminate CLS). Follow Lighthouse 100 and Asset Optimization master playbooks.
 
 ---
 
@@ -173,4 +173,6 @@ const {
 ## 4. Modern Generative Engine Optimization (AEO/GEO)
 - **Answer Capsules:** Directly beneath question `<h2>` headings, place a 40–60 word concise, factual summary before expanding into details.
 - **Data & Tables:** Present comparison and quantitative metrics in Markdown/HTML tables for direct RAG model ingestion.
-- **`llms.txt`:** Maintain a machine-readable directory index at `public/llms.txt`.
+- **`llms.txt` & `llms-full.txt`:** Maintain machine-readable knowledge files (`public/llms.txt` and optional `public/llms-full.txt`).
+- **AI Citation Bot Policy:** Explicitly allow citation crawlers (`OAI-SearchBot`, `ChatGPT-User`, `ClaudeBot`, `PerplexityBot`, `Bingbot`) in `robots.txt` so AI search engines can cite your content. Disallow training-only crawlers (`GPTBot`, `CCBot`) if you prefer not to donate training data.
+

@@ -30,6 +30,9 @@ Compatible with **Claude**, **Cursor**, **Codex**, **Antigravity (Gemini)**, **O
 - 🏷️ **Dynamic SVG Score Badge Generator (`npm run badge`):** Generates a live vector badge for `README.md` reflecting your deterministic audit score.
 - ⚡ **Instant IndexNow API Ping (`npm run ping-indexnow`):** Directly notifies Bing, Yandex, and IndexNow crawlers upon page and route updates.
 - 🛡️ **GitHub Actions CI Quality Gate (`.github/workflows/seo-check.yml`):** Automatically blocks pull requests if the SEO audit score drops below **90/100 (Grade A)**.
+- 💯 **Lighthouse 100/100 Playbook & Master Optimization Guides:** Detailed blueprints for 100/100 across Performance, Accessibility, Best Practices, and SEO ([guides/lighthouse-100-playbook.md](guides/lighthouse-100-playbook.md), [guides/asset-optimization-master.md](guides/asset-optimization-master.md)).
+- 🤖 **2026 AI Search & Citation Bot Policy:** Compliant with OpenAI, Anthropic, and Perplexity citation crawlers (`OAI-SearchBot`, `ClaudeBot`, `PerplexityBot`), dual `llms.txt` + `llms-full.txt` generation, and training-bot opt-out controls.
+- 🚀 **Third-Party Script Isolation & Edge Caching:** Web Worker offloading via Partytown, interaction-deferred script facades, and immutable CDN caching recipes ([guides/third-party-scripts-strategy.md](guides/third-party-scripts-strategy.md), [guides/caching-and-headers-guide.md](guides/caching-and-headers-guide.md)).
 - 🔄 **SPS Ecosystem Native & Dual-Memory:** Bidirectional synchronization between `sps-seo-config.json` and `./.sps/seo.json`.
 - 📋 **Zero-Install Portability:** Includes a standalone monolithic [SYSTEM-PROMPT.md](SYSTEM-PROMPT.md) for direct copy-pasting or GitHub raw retrieval.
 
@@ -83,11 +86,15 @@ sps-seo/
 │   ├── faq.json                      # FAQPage schema
 │   └── breadcrumb.json               # BreadcrumbList schema
 └── guides/
-    ├── phase1-discovery-audit.md     # Discovery intake questions & scoring guidelines
-    ├── phase2-codebase-execution.md  # Surgical codebase modification playbook
-    ├── phase3-external-seo.md        # GSC setup, DNS verification, indexing requests, backlinks
-    ├── aeo-geo-optimization.md       # AI Overviews, answer capsules, citation triggers, llms.txt
-    └── core-web-vitals-checklist.md  # LCP, INP (<200ms), CLS optimization checklist
+    ├── phase1-discovery-audit.md        # Discovery intake questions & scoring guidelines
+    ├── phase2-codebase-execution.md     # Surgical codebase modification playbook
+    ├── phase3-external-seo.md           # GSC setup, DNS verification, indexing requests, backlinks
+    ├── aeo-geo-optimization.md          # AI Overviews, answer capsules, citation triggers, llms.txt
+    ├── core-web-vitals-checklist.md     # LCP, INP (<200ms), CLS optimization checklist
+    ├── lighthouse-100-playbook.md       # 100/100 across Perf, a11y, best-practices & SEO
+    ├── asset-optimization-master.md     # AVIF/WebP, WOFF2 subsetting, zero-CLS font metrics
+    ├── third-party-scripts-strategy.md  # Partytown web workers, deferred facades, GTM/analytics
+    └── caching-and-headers-guide.md     # Immutable caching, Brotli, CDN edge rules, security headers
 ```
 
 ---

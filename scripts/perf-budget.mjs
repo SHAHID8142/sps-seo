@@ -71,8 +71,13 @@ export function scanPerformanceBudget(options = {}) {
 
   scanAssets(projectDir);
 
-  // 2. Scan template files for missing width/height attributes (CLS Guard)
+  // 2. Scan template files for missing width/height attributes (CLS Guard) & loading optimizations
   const missingDimensions = [];
+  const renderBlockingScripts = [];
+  let missingFontPreconnect = false;
+  let missingLazyCount = 0;
+  let heroMissingPriority = false;
+
   function scanTemplates(dir) {
     if (!fs.existsSync(dir)) return;
     const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -84,8 +89,12 @@ export function scanPerformanceBudget(options = {}) {
       } else if (e.isFile() && TEMPLATE_EXTS.has(path.extname(e.name).toLowerCase())) {
         try {
           const content = fs.readFileSync(full, 'utf8');
+          const rel = path.relative(projectDir, full);
+
+          // Check images
           const imgRegex = /<img\b([^>]*?)(?:\/?>|>[\s\S]*?<\/img>)/gi;
           let match;
+          let imgIndex = 0;
           while ((match = imgRegex.exec(content)) !== null) {
             const attrs = match[1];
             const hasWidth = /\bwidth=/i.test(attrs) || /style=["'][^"']*width:/i.test(attrs);
@@ -94,11 +103,38 @@ export function scanPerformanceBudget(options = {}) {
             if (!hasWidth || !hasHeight) {
               const srcMatch = /src=(?:["']([^"']+)["']|{([^}]+)})/i.exec(attrs);
               const src = srcMatch ? (srcMatch[1] || srcMatch[2] || 'unknown') : 'unknown';
-              missingDimensions.push({
-                file: path.relative(projectDir, full),
-                src
-              });
+              missingDimensions.push({ file: rel, src });
             }
+
+            // Check hero priority and below-fold lazy
+            if (imgIndex === 0) {
+              const hasPriority = /\bfetchpriority=["']high["']/i.test(attrs) || /\bpriority\b/i.test(attrs);
+              if (!hasPriority) heroMissingPriority = true;
+            } else {
+              const hasLazy = /\bloading=["']lazy["']/i.test(attrs);
+              if (!hasLazy) missingLazyCount++;
+            }
+            imgIndex++;
+          }
+
+          // Check render-blocking scripts in templates
+          const scriptRegex = /<script\b([^>]*src=[^>]*)>/gi;
+          while ((match = scriptRegex.exec(content)) !== null) {
+            const attrs = match[1];
+            const isAsync = /\basync\b/i.test(attrs);
+            const isDefer = /\bdefer\b/i.test(attrs);
+            const isModule = /type=["']module["']/i.test(attrs);
+            const isPartytown = /type=["']text\/partytown["']/i.test(attrs);
+            if (!isAsync && !isDefer && !isModule && !isPartytown) {
+              const srcMatch = /src=(?:["']([^"']+)["']|{([^}]+)})/i.exec(attrs);
+              const src = srcMatch ? (srcMatch[1] || srcMatch[2] || 'unknown') : 'unknown';
+              renderBlockingScripts.push({ file: rel, src });
+            }
+          }
+
+          // Check Google fonts preconnect
+          if (content.includes('fonts.googleapis.com') && !content.includes('rel="preconnect"')) {
+            missingFontPreconnect = true;
           }
         } catch {
           // ignore
@@ -146,12 +182,16 @@ export function scanPerformanceBudget(options = {}) {
   // - Heavy images (>200KB): 15 pts each (max 30)
   // - Total payload > 1.5MB: 25 pts
   // - Missing dimensions (CLS risk): 5 pts each (max 25)
+  // - Render-blocking scripts: 5 pts each (max 15)
   // - Missing font-display swap: 10 pts
+  // - Missing font preconnect: 5 pts
   let score = 100;
   if (heavyImages.length > 0) score -= Math.min(30, heavyImages.length * 15);
   if (totalAssetBytes > MAX_TOTAL_PAYLOAD_BYTES) score -= 25;
   if (missingDimensions.length > 0) score -= Math.min(25, missingDimensions.length * 5);
+  if (renderBlockingScripts.length > 0) score -= Math.min(15, renderBlockingScripts.length * 5);
   if (missingFontDisplay > 0) score -= 10;
+  if (missingFontPreconnect) score -= 5;
   score = Math.max(0, score);
 
   const grade = score >= 90 ? 'A' : score >= 75 ? 'B' : score >= 60 ? 'C' : 'F';
@@ -169,6 +209,11 @@ export function scanPerformanceBudget(options = {}) {
       legacyImagesCount: legacyImages.length,
       missingDimensionsCount: missingDimensions.length,
       missingDimensions: missingDimensions.slice(0, 10),
+      renderBlockingScriptsCount: renderBlockingScripts.length,
+      renderBlockingScripts: renderBlockingScripts.slice(0, 5),
+      missingFontPreconnect,
+      missingLazyCount,
+      heroMissingPriority,
       totalFontDeclarations,
       missingFontDisplay
     }
@@ -206,6 +251,16 @@ export function scanPerformanceBudget(options = {}) {
     });
   }
 
+  if (renderBlockingScripts.length > 0) {
+    console.log(`  ⚠️ ${renderBlockingScripts.length} Render-Blocking <script> tag(s) missing 'async' or 'defer'`);
+  } else {
+    console.log('  ✓ Scripts configured with async, defer, or module.');
+  }
+
+  if (missingFontPreconnect) {
+    console.log(`  ⚠️ External Google Fonts detected without <link rel="preconnect"> hint.`);
+  }
+
   if (missingFontDisplay > 0) {
     console.log(`  ⚠️ ${missingFontDisplay} @font-face declaration(s) missing 'font-display: swap;'`);
   } else if (totalFontDeclarations > 0) {
@@ -216,9 +271,11 @@ export function scanPerformanceBudget(options = {}) {
     console.log(`  ℹ ${legacyImages.length} PNG/JPG image(s) could be converted to WebP or AVIF.`);
   }
 
-  console.log('\nOptimization Tips:');
-  console.log('  1. Convert heavy PNGs/JPGs to modern .webp or .avif format using Sharp or Squoosh.');
-  console.log('  2. Always declare width="..." and height="..." on <img> elements to eliminate CLS layout jank.\n');
+  console.log('\nOptimization Guides:');
+  console.log('  - Lighthouse 100 Playbook:  guides/lighthouse-100-playbook.md');
+  console.log('  - Asset Master Guide:       guides/asset-optimization-master.md');
+  console.log('  - Third-Party Scripts:      guides/third-party-scripts-strategy.md');
+  console.log('  - Caching & CDN Headers:    guides/caching-and-headers-guide.md\n');
 
   return result;
 }

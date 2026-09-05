@@ -43,7 +43,14 @@
 ### Law 7: No Internal Keyword Cannibalization
 - Verify that multiple routes are not competing for the exact same target keywords or using duplicate `<title>`/`<meta description>` tags (`scripts/cannibalization.mjs`).
 
-### Law 8: Dual Memory Synchronization
+### Law 8: Enterprise Security, Secret Protection & Web Best Practices
+- Zero hardcoded secrets, private keys, or exposed `.env` files in `public/` directories (`scripts/security-check.mjs`).
+- Configure essential HTTP security headers (`Strict-Transport-Security`, `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`).
+- Prevent reverse tabnabbing on all external links (`rel="noopener noreferrer"`).
+- Never lock viewport zoom (`user-scalable=no` or `maximum-scale=1` prohibited).
+- Zero mixed content (`http://`) on secure HTTPS origins.
+
+### Law 9: Dual Memory Synchronization
 - Store project SEO variables in `sps-seo-config.json`.
 - If an SPS ecosystem directory (`./.sps/`) is present, run `node scripts/sync-config.mjs` to maintain bidirectional synchronization with `./.sps/seo.json`.
 
@@ -86,4 +93,5 @@ A project is only certified "SPS SEO Compliant" when:
 7. Asset budget meets low-end mobile limits (≤ 1.5MB total payload, images ≤ 200KB).
 8. Valid `sitemap.xml`, `robots.txt`, and `llms.txt` are generated.
 9. Branded `og-image.svg` and `seo-score-badge.svg` are generated.
-10. `sps-seo-audit-report.md` (and `.sps/seo-audit.md` if applicable) is updated.
+10. Zero critical secret leaks or exposed files in public directories (`scripts/security-check.mjs`).
+11. `sps-seo-audit-report.md` (and `.sps/seo-audit.md` if applicable) is updated.

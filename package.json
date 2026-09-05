@@ -17,6 +17,8 @@
     "cannibalization": "node scripts/cannibalization.mjs",
     "competitor": "node scripts/competitor-intel.mjs",
     "perf": "node scripts/perf-budget.mjs",
+    "security": "node scripts/security-check.mjs",
+    "security:json": "node scripts/security-check.mjs --json",
     "preview": "node scripts/preview-serp.mjs",
     "validate-schema": "node scripts/validate-schema.mjs",
     "i18n": "node scripts/i18n-seo.mjs",

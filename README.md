@@ -33,6 +33,7 @@ Compatible with **Claude**, **Cursor**, **Codex**, **Antigravity (Gemini)**, **O
 - 💯 **Lighthouse 100/100 Playbook & Master Optimization Guides:** Detailed blueprints for 100/100 across Performance, Accessibility, Best Practices, and SEO ([guides/lighthouse-100-playbook.md](guides/lighthouse-100-playbook.md), [guides/asset-optimization-master.md](guides/asset-optimization-master.md)).
 - 🤖 **2026 AI Search & Citation Bot Policy:** Compliant with OpenAI, Anthropic, and Perplexity citation crawlers (`OAI-SearchBot`, `ClaudeBot`, `PerplexityBot`), dual `llms.txt` + `llms-full.txt` generation, and training-bot opt-out controls.
 - 🚀 **Third-Party Script Isolation & Edge Caching:** Web Worker offloading via Partytown, interaction-deferred script facades, and immutable CDN caching recipes ([guides/third-party-scripts-strategy.md](guides/third-party-scripts-strategy.md), [guides/caching-and-headers-guide.md](guides/caching-and-headers-guide.md)).
+- 🛡️ **Enterprise Security & Best Practices Scanner (`npm run security`):** Static analyzer auditing HTTP security headers (HSTS, CSP, X-Frame-Options, nosniff, Referrer-Policy), public folder leaks (`.env`, `.git`), hardcoded API keys/secrets, mixed content (`http://`), un-sanitized DOM injections, and viewport zoom accessibility.
 - 🔄 **SPS Ecosystem Native & Dual-Memory:** Bidirectional synchronization between `sps-seo-config.json` and `./.sps/seo.json`.
 - 📋 **Zero-Install Portability:** Includes a standalone monolithic [SYSTEM-PROMPT.md](SYSTEM-PROMPT.md) for direct copy-pasting or GitHub raw retrieval.
 
@@ -58,6 +59,7 @@ sps-seo/
 │   ├── fix.mjs                       # 1-click automated remediation engine (--dry-run / --apply)
 │   ├── competitor-intel.mjs          # Competitor intelligence & Content Gap Matrix generator
 │   ├── perf-budget.mjs               # Core Web Vitals & asset weight budget scanner
+│   ├── security-check.mjs            # Enterprise security headers, secret leaks & best practices scanner
 │   ├── preview-serp.mjs              # Visual SERP, Social, and AI Citation previewer
 │   ├── internal-links.mjs            # Internal link graph analyzer & orphan page detector
 │   ├── cannibalization.mjs           # Keyword cannibalization & duplicate meta checker
@@ -113,6 +115,8 @@ npm run links               # Internal link graph & orphan page analyzer
 npm run cannibalization     # Keyword cannibalization & duplicate meta detector
 npm run validate-schema     # Schema.org JSON-LD validator
 npm run perf                # Core Web Vitals & asset budget scanner
+npm run security            # Enterprise security headers & best practices scanner
+npm run security:json       # Output security scan in pure JSON
 npm run i18n                # Multilingual hreflang reciprocity check
 
 # 3. Competitor Intelligence & Visual Previews

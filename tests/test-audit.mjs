@@ -22,6 +22,7 @@ import { scanPerformanceBudget } from '../scripts/perf-budget.mjs';
 import { generateSerpPreview } from '../scripts/preview-serp.mjs';
 import { validateI18n } from '../scripts/i18n-seo.mjs';
 import { generateBadge } from '../scripts/badge.mjs';
+import { scanSecurityAndBestPractices } from '../scripts/security-check.mjs';
 
 function createTempDir(prefix) {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -400,6 +401,65 @@ async function runTests() {
     assert(badgeResult.svg.includes(`${badgeResult.score}/100`), 'Contains exact numerical score in SVG');
   } finally {
     cleanupDir(badgeDir);
+  }
+
+  // TEST 15: Enterprise Security & Best Practices Scanner
+  const secDir = createTempDir('sps-seo-test-sec-');
+  try {
+    console.log('\nTest 15: Enterprise Security & Best Practices Scanner');
+    fs.mkdirSync(path.join(secDir, 'public'), { recursive: true });
+
+    // Mock vercel.json with all security headers
+    const vercelConfig = {
+      headers: [
+        {
+          source: '/(.*)',
+          headers: [
+            { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+            { key: 'Content-Security-Policy', value: "default-src 'self'" },
+            { key: 'X-Frame-Options', value: 'DENY' },
+            { key: 'X-Content-Type-Options', value: 'nosniff' },
+            { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+            { key: 'Permissions-Policy', value: 'camera=(), microphone=()' }
+          ]
+        }
+      ]
+    };
+    fs.writeFileSync(path.join(secDir, 'vercel.json'), JSON.stringify(vercelConfig, null, 2));
+
+    // Expose a sensitive file in public directory
+    fs.writeFileSync(path.join(secDir, 'public/.env.local'), 'SECRET_KEY=leak');
+
+    // Create an HTML template with mixed content, zoom lock, and deprecated tag
+    fs.writeFileSync(path.join(secDir, 'index.html'), `
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+          <title>Security Test Site</title>
+        </head>
+        <body>
+          <main>
+            <h1>Security Test</h1>
+            <center>Old center tag</center>
+            <img src="http://insecure-cdn.com/asset.png" alt="Insecure Asset" width="100" height="100" />
+          </main>
+        </body>
+      </html>
+    `);
+
+    const secResult = scanSecurityAndBestPractices({ projectDir: secDir, json: true });
+
+    assert(secResult.headers.items.hsts.present, 'Detected HSTS header in vercel.json');
+    assert(secResult.headers.items.csp.present, 'Detected CSP header in vercel.json');
+    assert(secResult.headers.items.xFrameOptions.present, 'Detected X-Frame-Options in vercel.json');
+    assert(secResult.exposure.exposedFilesCount === 1, 'Flagged exposed .env.local in public directory');
+    assert(secResult.templates.mixedContentCount === 1, 'Flagged insecure http:// asset');
+    assert(secResult.templates.viewportIssuesCount === 1, 'Flagged viewport user-scalable=no zoom lock');
+    assert(secResult.templates.deprecatedTagCount === 1, 'Flagged deprecated <center> tag');
+  } finally {
+    cleanupDir(secDir);
   }
 
   console.log(`\n==============================================`);

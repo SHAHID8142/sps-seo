@@ -524,6 +524,10 @@ export async function runAudit(options = {}) {
   if (totalMissingAlt > 0) console.log(`  ${colors.yellow}! Missing Image Alt Attributes (${totalMissingAlt} detected)${colors.reset} - Impairs accessibility and Google Image indexing.`);
   if (!configExists) console.log(`  ${colors.blue}ℹ Missing sps-seo-config.json${colors.reset} - Initialize config using sps-seo-config.example.json.`);
 
+  console.log(`\n${colors.bold}Security & Performance Diagnostics:${colors.reset}`);
+  console.log(`  - Run \`npm run security\` to audit HTTP security headers (HSTS, CSP), secret leaks, mixed content, and accessibility.`);
+  console.log(`  - Run \`npm run perf\` to scan Core Web Vitals, asset payload budgets, and CLS layout shifts.`);
+
   console.log(`\n${colors.dim}Detailed markdown report generated at: sps-seo-audit-report.md${colors.reset}\n`);
 
   // Write Markdown Report

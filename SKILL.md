@@ -48,11 +48,12 @@ Read [METHOD-CARD.md](METHOD-CARD.md) before executing any strategy.
    ```bash
    npm run audit
    ```
-4. **Deep Graph, Performance & Cannibalization Analysis:**
+4. **Deep Graph, Performance, Security & Cannibalization Analysis:**
    ```bash
    npm run links             # Maps internal link graph & detects orphan pages
    npm run cannibalization   # Identifies duplicate titles & keyword competition
    npm run perf              # Scans asset weight budgets & image dimensions (CLS)
+   npm run security          # Audits HTTP security headers, secret leaks & best practices
    npm run i18n              # Checks hreflang reciprocity if multilingual
    ```
 5. **Report & Baseline Gate:** Review `sps-seo-audit-report.md`. Present the baseline score (0–100) to the user, highlighting critical blockers.
@@ -128,6 +129,7 @@ Guide the user through [guides/phase3-external-seo.md](guides/phase3-external-se
 | `npm run cannibalization` | Keyword cannibalization & duplicate meta checker |
 | `npm run competitor` | Competitor intelligence & Content Gap Matrix generator |
 | `npm run perf` | Core Web Vitals & asset weight budget scanner |
+| `npm run security` | Enterprise security headers, secret leaks & best practices scanner |
 | `npm run preview` | Visual SERP, Social, and AI Citation previewer |
 | `npm run validate-schema` | Schema.org syntax & Google Rich Results validator |
 | `npm run i18n` | Multilingual i18n & hreflang reciprocity validator |

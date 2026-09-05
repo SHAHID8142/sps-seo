@@ -37,6 +37,12 @@
    - Audit across routes to eliminate duplicate `<title>` or `<meta description>` tags.
    - Enforce low-end mobile payload limits (≤ 1.5MB total initial payload, images ≤ 200KB, explicit dimensions on all `<img>` tags to eliminate CLS). Follow Lighthouse 100 and Asset Optimization master playbooks.
 
+6. **Enterprise Security, Secret Protection & Web Best Practices:**
+   - Audit HTTP security headers (`Strict-Transport-Security`, `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`) via `npm run security`.
+   - Guarantee zero exposed sensitive files (`.env`, `.git`) in public directories and zero hardcoded secrets.
+   - Enforce `rel="noopener noreferrer"` on `target="_blank"` links and eliminate mixed content (`http://`).
+   - Prohibit viewport zoom locking (`user-scalable=no` or `maximum-scale=1`).
+
 ---
 
 ## 2. Three-Phase Execution Workflow

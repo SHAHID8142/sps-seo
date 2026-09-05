@@ -159,7 +159,7 @@ Unlike subjective SEO checklists, SPS SEO uses a **100-point deterministic scori
 Installs into all detected agent directories so any AI coding assistant can use SPS SEO:
 
 ```bash
-git clone https://github.com/shahid/sps-seo.git
+git clone https://github.com/SHAHID8142/sps-seo.git
 cd sps-seo
 ./scripts/install.sh --global
 ```

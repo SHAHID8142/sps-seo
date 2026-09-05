@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acme Software - SPS SEO Live SERP & Social Preview</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #111827;
+      --card-border: #1f2937;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --google-blue: #1a0dab;
+      --google-green: #202124;
+      --google-gray: #4d5156;
+      --accent: #38bdf8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      padding: 40px 20px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header { margin-bottom: 36px; text-align: center; }
+    header h1 { font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+    header p { color: var(--text-muted); font-size: 15px; }
+
+    .section {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 32px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .section-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Google Desktop SERP */
+    .google-box {
+      background: #ffffff;
+      color: #202124;
+      padding: 20px;
+      border-radius: 8px;
+      font-family: Arial, sans-serif;
+      max-width: 652px;
+    }
+    .google-url {
+      font-size: 14px;
+      color: #202124;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .google-favicon {
+      width: 18px;
+      height: 18px;
+      background: #e5e7eb;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .google-title {
+      font-size: 20px;
+      color: #1a0dab;
+      text-decoration: none;
+      line-height: 1.3;
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 400;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .google-desc {
+      font-size: 14px;
+      color: #4d5156;
+      line-height: 1.58;
+    }
+
+    /* Twitter / X Card */
+    .twitter-card {
+      background: #000000;
+      border: 1px solid #2f3336;
+      border-radius: 16px;
+      max-width: 550px;
+      overflow: hidden;
+    }
+    .twitter-img {
+      width: 100%;
+      height: 280px;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 14px;
+      border-bottom: 1px solid #2f3336;
+    }
+    .twitter-content { padding: 14px 16px; }
+    .twitter-domain { font-size: 13px; color: #71767b; margin-bottom: 4px; }
+    .twitter-title { font-size: 15px; font-weight: 700; color: #e7e9ea; margin-bottom: 4px; }
+    .twitter-desc { font-size: 14px; color: #71767b; line-height: 1.4; }
+
+    /* Google AI Overview / Perplexity Capsule */
+    .ai-capsule {
+      background: #1e1b4b;
+      border: 1px solid #4338ca;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .ai-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #312e81;
+      color: #c7d2fe;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+    .ai-text {
+      font-size: 15px;
+      line-height: 1.6;
+      color: #e0e7ff;
+      margin-bottom: 14px;
+    }
+    .citation-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #2e1065;
+      border: 1px solid #6b21a8;
+      color: #e9d5ff;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>SPS SEO Visual SERP & Social Previews</h1>
+      <p>Live visual rendering of search snippets, social graph cards, and AI citations.</p>
+    </header>
+
+    <!-- 1. Google Desktop SERP -->
+    <div class="section">
+      <div class="section-title">🌐 Google Desktop SERP Result</div>
+      <div class="google-box">
+        <div class="google-url">
+          <span class="google-favicon"></span>
+          <span>example.com</span>
+          <span style="color:#70757a;">›</span>
+        </div>
+        <a href="#" class="google-title">Acme | High-Performance Cloud Orchestration</a>
+        <div class="google-desc">Streamline your multi-cloud infrastructure with Acme's automated orchestration engine. Real-time telemetry, zero-trust security, and instant deploys.</div>
+      </div>
+    </div>
+
+    <!-- 2. Twitter / X Summary Card -->
+    <div class="section">
+      <div class="section-title">🐦 Twitter / X Social Preview Card</div>
+      <div class="twitter-card">
+        <div class="twitter-img">
+          <div style="text-align:center;">
+            <p style="font-size:24px; font-weight:bold; color:#fff; margin-bottom:6px;">Acme Software</p>
+            <p>https://example.com/og-image.jpg</p>
+          </div>
+        </div>
+        <div class="twitter-content">
+          <div class="twitter-domain">example.com</div>
+          <div class="twitter-title">Acme | High-Performance Cloud Orchestration</div>
+          <div class="twitter-desc">Streamline your multi-cloud infrastructure with Acme's automated orchestration engine. Real-time telemetry, zero-trust security, and instant deploys.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. AI Overview Citation Capsule -->
+    <div class="section">
+      <div class="section-title">🤖 Google AI Overview & Perplexity Citation Model</div>
+      <div class="ai-capsule">
+        <div class="ai-badge">✨ Synthesized AI Answer Capsule</div>
+        <p class="ai-text">
+          According to technical specifications from Acme Software, multi-cloud architecture coordinates workloads and policies across public cloud providers with zero-trust network boundaries.
+        </p>
+        <a href="https://example.com" class="citation-pill" target="_blank">
+          📄 Cited Source: example.com ↗
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -7,7 +7,7 @@
 
 set -euo pipefail
 
-REPO_URL="${SPS_SEO_REPO_URL:-https://github.com/shahid/sps-seo.git}"
+REPO_URL="${SPS_SEO_REPO_URL:-https://github.com/SHAHID8142/sps-seo.git}"
 TARGET_DIR=".agents/skills/sps-seo"
 
 echo "===================================================="

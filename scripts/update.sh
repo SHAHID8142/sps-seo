@@ -7,7 +7,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REPO_URL="${SPS_SEO_REPO_URL:-https://github.com/shahid/sps-seo.git}"
+REPO_URL="${SPS_SEO_REPO_URL:-https://github.com/SHAHID8142/sps-seo.git}"
 
 # Colors
 RED='\033[0;31m'
@@ -83,7 +83,11 @@ fi
 
 # Fetch latest version from GitHub
 echo "Checking for updates..."
-LATEST_RAW=$(curl -sSL -w "\n%{http_code}" "https://raw.githubusercontent.com/shahid/sps-seo/main/VERSION" 2>/dev/null || echo "")
+# Derive raw content URL from repo URL (supports github.com/user/repo format)
+RAW_URL="${REPO_URL%.git}"
+RAW_URL="${RAW_URL/github.com/raw.githubusercontent.com}"
+RAW_URL="${RAW_URL}/main/VERSION"
+LATEST_RAW=$(curl -sSL -w "\n%{http_code}" "$RAW_URL" 2>/dev/null || echo "")
 HTTP_CODE=$(echo "$LATEST_RAW" | tail -1)
 LATEST_VERSION=$(echo "$LATEST_RAW" | head -1 | tr -d '[:space:]')
 

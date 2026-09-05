@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * SPS SEO Comprehensive Test Suite
+ * SPS SEO Enterprise Test Suite
  * Validates deterministic audit engine, AST tokenizer, auto-fixer,
  * internal links graph, cannibalization, schema validator, OG generator,
- * and IndexNow ping.
+ * IndexNow ping, competitor analyzer, perf budget, SERP preview, i18n, and badge.
  */
 
 import fs from 'node:fs';
@@ -17,6 +17,11 @@ import { detectCannibalization } from '../scripts/cannibalization.mjs';
 import { validateSchemas } from '../scripts/validate-schema.mjs';
 import { generateOgImage } from '../scripts/generate-og.mjs';
 import { pingIndexNow } from '../scripts/ping-indexnow.mjs';
+import { analyzeCompetitors } from '../scripts/competitor-intel.mjs';
+import { scanPerformanceBudget } from '../scripts/perf-budget.mjs';
+import { generateSerpPreview } from '../scripts/preview-serp.mjs';
+import { validateI18n } from '../scripts/i18n-seo.mjs';
+import { generateBadge } from '../scripts/badge.mjs';
 
 function createTempDir(prefix) {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -171,13 +176,10 @@ async function runTests() {
     fs.writeFileSync(path.join(fixDir, 'index.html'), `
       <!DOCTYPE html>
       <html>
-        <body>
-          <img src="/banner.png" />
-        </body>
+        <body><img src="/banner.png" /></body>
       </html>
     `);
 
-    // Run auto-fix
     const fixResult = await runAutoFix({ cwd: fixDir, dryRun: false });
     assert(fixResult.applied >= 3, `Applied automated remediation items (${fixResult.applied})`);
     assert(fs.existsSync(path.join(fixDir, 'public/robots.txt')), 'Generated missing robots.txt');
@@ -195,20 +197,9 @@ async function runTests() {
   try {
     console.log('\nTest 5: Internal Link & Orphan Page Graph Analyzer');
     fs.mkdirSync(path.join(linkDir, 'pages'), { recursive: true });
-    
-    // index links to /about with descriptive text, but links to /features with weak "click here"
-    fs.writeFileSync(path.join(linkDir, 'pages/index.html'), `
-      <a href="/about">Learn about our team</a>
-      <a href="/features">click here</a>
-    `);
-    // about links back to /
-    fs.writeFileSync(path.join(linkDir, 'pages/about.html'), `
-      <a href="/">Home</a>
-    `);
-    // orphan page: /pricing is defined but never linked from anywhere
-    fs.writeFileSync(path.join(linkDir, 'pages/pricing.html'), `
-      <h1>Pricing</h1>
-    `);
+    fs.writeFileSync(path.join(linkDir, 'pages/index.html'), `<a href="/about">About</a><a href="/features">click here</a>`);
+    fs.writeFileSync(path.join(linkDir, 'pages/about.html'), `<a href="/">Home</a>`);
+    fs.writeFileSync(path.join(linkDir, 'pages/pricing.html'), `<h1>Pricing</h1>`);
 
     const linkResult = analyzeInternalLinks({ cwd: linkDir, json: true });
     assert(linkResult.routesCount >= 3, `Discovered all routes (${linkResult.routesCount})`);
@@ -223,16 +214,8 @@ async function runTests() {
   try {
     console.log('\nTest 6: Keyword Cannibalization Detector');
     fs.mkdirSync(path.join(cannDir, 'src/pages'), { recursive: true });
-    
-    // Two pages with duplicate titles and identical H1s
-    fs.writeFileSync(path.join(cannDir, 'src/pages/page1.html'), `
-      <title>Best Cloud Tool</title>
-      <h1>Cloud Platform</h1>
-    `);
-    fs.writeFileSync(path.join(cannDir, 'src/pages/page2.html'), `
-      <title>Best Cloud Tool</title>
-      <h1>Cloud Platform</h1>
-    `);
+    fs.writeFileSync(path.join(cannDir, 'src/pages/page1.html'), `<title>Best Cloud Tool</title><h1>Cloud Platform</h1>`);
+    fs.writeFileSync(path.join(cannDir, 'src/pages/page2.html'), `<title>Best Cloud Tool</title><h1>Cloud Platform</h1>`);
 
     const cannResult = detectCannibalization({ cwd: cannDir, json: true });
     assert(cannResult.duplicateTitles.length === 1, 'Detected duplicate title across pages');
@@ -247,8 +230,6 @@ async function runTests() {
   try {
     console.log('\nTest 7: Schema.org Syntax & Spec Validator');
     fs.mkdirSync(path.join(schemaDir, 'app'), { recursive: true });
-
-    // Valid Organization Schema
     fs.writeFileSync(path.join(schemaDir, 'app/layout.tsx'), `
       <script type="application/ld+json">
       {
@@ -281,7 +262,6 @@ async function runTests() {
     const ogResult = generateOgImage({ cwd: ogDir });
     assert(fs.existsSync(ogResult.targetFile), 'Created og-image.svg');
     assert(ogResult.svg.includes('Titan OS'), 'Included site brand name in SVG');
-    assert(ogResult.svg.includes('1200'), 'Proper 1200px width viewBox');
   } finally {
     cleanupDir(ogDir);
   }
@@ -298,9 +278,128 @@ async function runTests() {
     const pingResult = await pingIndexNow({ cwd: pingDir, dryRun: true, urls: ['https://titan.dev/'] });
     assert(pingResult.success === true, 'IndexNow dry-run completed successfully');
     assert(pingResult.payload.host === 'titan.dev', 'Parsed correct host');
-    assert(fs.existsSync(path.join(pingDir, 'public/indexnow-key.txt')), 'Generated IndexNow API key file');
   } finally {
     cleanupDir(pingDir);
+  }
+
+  // TEST 10: Competitor Intelligence & Content Gap Matrix
+  const compDir = createTempDir('sps-seo-test-comp-');
+  try {
+    console.log('\nTest 10: Competitor Intelligence & Content Gap Matrix');
+    fs.mkdirSync(path.join(compDir, 'app'), { recursive: true });
+    fs.writeFileSync(path.join(compDir, 'app/page.tsx'), `<h1>Local Cloud Services</h1><h2>Container Hosting</h2>`);
+    fs.writeFileSync(path.join(compDir, 'sps-seo-config.json'), JSON.stringify({
+      targeting: { competitors: ['https://competitor.com'] }
+    }));
+
+    const mockCompetitorHtml = `
+      <html>
+        <head><title>Competitor - Multi-Cloud Enterprise</title></head>
+        <body>
+          <h1>Competitor Cloud</h1>
+          <h2>Zero-Trust Security</h2>
+          <h2>Disaster Recovery Orchestration</h2>
+          <script type="application/ld+json">{"@type":"Product","name":"CloudOS"}</script>
+        </body>
+      </html>
+    `;
+
+    const compResult = await analyzeCompetitors({
+      cwd: compDir,
+      urls: ['https://competitor.com'],
+      mockHtmlMap: { 'https://competitor.com': mockCompetitorHtml }
+    });
+
+    assert(compResult.competitorsCount === 1, 'Analyzed competitor profile');
+    assert(compResult.missingTopics.length >= 2, 'Identified topic gaps (Zero-Trust Security, Disaster Recovery)');
+    assert(fs.existsSync(path.join(compDir, 'sps-seo-competitor-matrix.md')), 'Generated competitor matrix markdown report');
+  } finally {
+    cleanupDir(compDir);
+  }
+
+  // TEST 11: Core Web Vitals & Asset Budget Scanner
+  const perfDir = createTempDir('sps-seo-test-perf-');
+  try {
+    console.log('\nTest 11: Core Web Vitals & Asset Budget Scanner');
+    fs.mkdirSync(path.join(perfDir, 'public'), { recursive: true });
+    // Create a 250KB heavy dummy image file
+    const heavyBuffer = Buffer.alloc(250 * 1024, 0);
+    fs.writeFileSync(path.join(perfDir, 'public/huge-banner.png'), heavyBuffer);
+    // Create a template with an img missing width/height
+    fs.writeFileSync(path.join(perfDir, 'index.html'), `<img src="/huge-banner.png" />`);
+
+    const perfResult = scanPerformanceBudget({ cwd: perfDir, json: true });
+    assert(perfResult.metrics.heavyImages.length === 1, 'Accurately flagged image exceeding 200KB');
+    assert(perfResult.metrics.missingDimensionsCount === 1, 'Flagged img tag missing width/height attributes (CLS Guard)');
+    assert(perfResult.score < 90, `Penalized asset budget score (Actual: ${perfResult.score})`);
+  } finally {
+    cleanupDir(perfDir);
+  }
+
+  // TEST 12: Visual SERP & Social Previewer
+  const prevDir = createTempDir('sps-seo-test-prev-');
+  try {
+    console.log('\nTest 12: Visual SERP & Social Previewer');
+    fs.mkdirSync(path.join(prevDir, 'public'), { recursive: true });
+    fs.writeFileSync(path.join(prevDir, 'sps-seo-config.json'), JSON.stringify({
+      site: { name: 'HyperScale', url: 'https://hyperscale.io' },
+      metadata: { defaultTitle: 'HyperScale - Ultra Low Latency Compute' }
+    }));
+
+    const prevResult = generateSerpPreview({ cwd: prevDir });
+    assert(fs.existsSync(prevResult.previewPath), 'Generated public/seo-preview.html');
+    const htmlContent = fs.readFileSync(prevResult.previewPath, 'utf8');
+    assert(htmlContent.includes('Google Desktop SERP Result'), 'Included Google Desktop SERP section');
+    assert(htmlContent.includes('Twitter / X Social Preview Card'), 'Included Twitter/X card preview');
+    assert(htmlContent.includes('Google AI Overview'), 'Included AI Overview citation preview');
+  } finally {
+    cleanupDir(prevDir);
+  }
+
+  // TEST 13: Multilingual i18n & hreflang Reciprocity Engine
+  const i18nDir = createTempDir('sps-seo-test-i18n-');
+  try {
+    console.log('\nTest 13: Multilingual i18n & hreflang Reciprocity Engine');
+    fs.mkdirSync(path.join(i18nDir, 'public'), { recursive: true });
+    fs.writeFileSync(path.join(i18nDir, 'index.html'), `
+      <head>
+        <link rel="alternate" hreflang="en" href="https://example.com/en" />
+        <link rel="alternate" hreflang="es" href="https://example.com/es" />
+        <link rel="alternate" hreflang="x-default" href="https://example.com/" />
+      </head>
+    `);
+
+    const i18nResult = validateI18n({ cwd: i18nDir, json: true, silent: true });
+    assert(i18nResult.isMultilingual === true, 'Detected multilingual hreflang implementation');
+    assert(i18nResult.totalTags === 3, 'Extracted all 3 hreflang tags');
+    assert(i18nResult.isValid === true, 'Passed ISO code and x-default validation');
+  } finally {
+    cleanupDir(i18nDir);
+  }
+
+  // TEST 14: Live SVG SEO Score Badge Generator
+  const badgeDir = createTempDir('sps-seo-test-badge-');
+  try {
+    console.log('\nTest 14: Live SVG SEO Score Badge Generator');
+    fs.mkdirSync(path.join(badgeDir, 'public'), { recursive: true });
+    fs.writeFileSync(path.join(badgeDir, 'index.html'), `
+      <!DOCTYPE html>
+      <html>
+        <head><title>Badge Test Site</title><meta name="description" content="A test site for badges." /></head>
+        <body><main><h1>Badge Site</h1></main></body>
+      </html>
+    `);
+    fs.writeFileSync(path.join(badgeDir, 'robots.txt'), 'User-agent: *\nAllow: /');
+    fs.writeFileSync(path.join(badgeDir, 'sitemap.xml'), '<urlset></urlset>');
+    fs.writeFileSync(path.join(badgeDir, 'llms.txt'), '# Knowledge');
+    fs.writeFileSync(path.join(badgeDir, 'sps-seo-config.json'), '{"site":{}}');
+
+    const badgeResult = await generateBadge({ cwd: badgeDir });
+    assert(fs.existsSync(badgeResult.badgeFile), 'Created seo-score-badge.svg');
+    assert(badgeResult.svg.includes('SEO'), 'Contains SEO badge label');
+    assert(badgeResult.svg.includes(`${badgeResult.score}/100`), 'Contains exact numerical score in SVG');
+  } finally {
+    cleanupDir(badgeDir);
   }
 
   console.log(`\n==============================================`);

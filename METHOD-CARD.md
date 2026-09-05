@@ -30,14 +30,19 @@
   - **Schema & AI Search (AEO):** 25 pts
 - Baseline audit must be run before modifications; verification audit must be run after modifications.
 
-### Law 5: Internal Link Architecture & Zero Orphans
+### Law 5: Low-End Mobile Asset Budget & CLS Protection
+- Initial payload must not exceed 1.5MB total asset weight.
+- Individual image assets must not exceed 200KB.
+- All `<img>` tags must feature explicit `width` and `height` dimensions to prevent layout shifts.
+
+### Law 6: Internal Link Architecture & Zero Orphans
 - Every indexable page must have at least one incoming contextual internal link (`scripts/internal-links.mjs`).
 - Never use generic anchor texts ("click here", "read more"); use descriptive, keyword-aligned anchor text.
 
-### Law 6: No Internal Keyword Cannibalization
+### Law 7: No Internal Keyword Cannibalization
 - Verify that multiple routes are not competing for the exact same target keywords or using duplicate `<title>`/`<meta description>` tags (`scripts/cannibalization.mjs`).
 
-### Law 7: Dual Memory Synchronization
+### Law 8: Dual Memory Synchronization
 - Store project SEO variables in `sps-seo-config.json`.
 - If an SPS ecosystem directory (`./.sps/`) is present, run `node scripts/sync-config.mjs` to maintain bidirectional synchronization with `./.sps/seo.json`.
 
@@ -49,19 +54,21 @@
 flowchart TD
     A[Start: /sps-seo] --> B[Phase 1: Discovery & Audit]
     B --> C[npm run init - Wizard Setup]
-    C --> D[Fetch Real-Time Search Trends]
-    D --> E[Run scripts/audit.mjs - Baseline Score 0-100]
-    E --> F[Run links & cannibalization checks]
-    F --> G[Phase 2: Automated On-Page Execution]
-    G --> H[npm run fix - Automated Scaffolding]
-    H --> I[Surgical Injections: Meta, Canonical, OG, Schemas]
-    I --> J[npm run validate-schema & npm run og]
-    J --> K[Run Verification Audit: Score >= 90/100]
-    K --> L[Phase 3: External SEO Guidance]
-    L --> M[npm run ping-indexnow - Direct API Ping]
-    M --> N[GSC Setup, DNS TXT, Sitemap Submission, Backlinks]
-    N --> O[Deploy GitHub Actions CI Quality Gate]
-    O --> P[Done & Certified]
+    C --> D[npm run competitor - Content Gap Matrix]
+    D --> E[Fetch Real-Time Search Trends]
+    E --> F[Run scripts/audit.mjs - Baseline Score 0-100]
+    F --> G[Run links, cannibalization & perf checks]
+    G --> H[Phase 2: Automated On-Page Execution]
+    H --> I[npm run fix - Automated Scaffolding]
+    I --> J[Surgical Injections: Meta, Canonical, OG, Schemas]
+    J --> K[npm run validate-schema & npm run og]
+    K --> L[npm run preview & npm run badge]
+    L --> M[Run Verification Audit: Score >= 90/100]
+    M --> N[Phase 3: External SEO Guidance]
+    N --> O[npm run ping-indexnow - Direct API Ping]
+    O --> P[GSC Setup, DNS TXT, Sitemap Submission, Backlinks]
+    P --> Q[Deploy GitHub Actions CI Quality Gate]
+    Q --> R[Done & Certified]
 ```
 
 ---
@@ -71,10 +78,11 @@ flowchart TD
 A project is only certified "SPS SEO Compliant" when:
 1. Deterministic score in `scripts/audit.mjs` reaches **>= 90/100 (Grade A)**.
 2. Exactly one `<h1>` per page with zero skipped heading levels.
-3. 100% of images in primary content templates have descriptive `alt` tags.
+3. 100% of images in primary content templates have descriptive `alt` tags and explicit dimensions (CLS protected).
 4. Valid Schema.org JSON-LD scripts pass `scripts/validate-schema.mjs` without errors.
 5. Internal linking graph has zero orphan pages (`scripts/internal-links.mjs`).
 6. Zero duplicate titles or keyword cannibalization detected (`scripts/cannibalization.mjs`).
-7. Valid `sitemap.xml`, `robots.txt`, and `llms.txt` are generated.
-8. Branded `og-image.svg` is generated.
-9. `sps-seo-audit-report.md` (and `.sps/seo-audit.md` if applicable) is updated.
+7. Asset budget meets low-end mobile limits (≤ 1.5MB total payload, images ≤ 200KB).
+8. Valid `sitemap.xml`, `robots.txt`, and `llms.txt` are generated.
+9. Branded `og-image.svg` and `seo-score-badge.svg` are generated.
+10. `sps-seo-audit-report.md` (and `.sps/seo-audit.md` if applicable) is updated.

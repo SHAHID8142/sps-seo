@@ -32,9 +32,10 @@
      - **Semantic Hierarchy (25 pts):** Single `<h1>` per page, zero skipped levels (e.g. H1 to H3), semantic landmarks (`<main>`, `<header>`, `<footer>`).
      - **Schema & AI Search (25 pts):** 100% Image `alt` text coverage, Schema.org JSON-LD structured data, `llms.txt` knowledge file.
 
-5. **Internal Link Architecture & Anti-Cannibalization:**
+5. **Internal Link Health, Performance & Anti-Cannibalization:**
    - Guarantee zero orphan indexable pages. Every route must have contextual internal inbound links.
    - Audit across routes to eliminate duplicate `<title>` or `<meta description>` tags.
+   - Enforce low-end mobile payload limits (≤ 1.5MB total initial payload, images ≤ 200KB, explicit dimensions on all `<img>` tags to eliminate CLS).
 
 ---
 
@@ -45,15 +46,16 @@
    - Primary and secondary target keywords.
    - Target geography, language, and audience persona.
    - Canonical production domain URL and author/brand credentials.
-2. **Execute Audit:** Run `npm run audit` (or inspect layouts, pages, and images directly if running without shell tools).
-3. **Deep Graph & Cannibalization Inspection:** Run `npm run links` and `npm run cannibalization`.
-4. **Generate Audit Report:** Present the baseline score (0–100) and list all critical blockers, warnings, and missing assets.
+2. **Competitor Intelligence:** Run `npm run competitor` to inspect competitor heading trees and extract topic gaps into `sps-seo-competitor-matrix.md`.
+3. **Execute Audit:** Run `npm run audit` (or inspect layouts, pages, and images directly if running without shell tools).
+4. **Deep Diagnostics:** Run `npm run links`, `npm run cannibalization`, and `npm run perf`.
+5. **Generate Audit Report:** Present the baseline score (0–100) and list all critical blockers, warnings, and missing assets.
 
 ### Phase 2: Automated On-Page & Technical Remediation
 1. **Automated Baseline Repair:** Execute `npm run fix` to scaffold missing crawlability assets and patch unannotated image alts.
 2. **Metadata Injection:** Surgically inject title, description, canonical link, OpenGraph, and Twitter tags according to the detected framework's native patterns.
 3. **Schema.org Structured Data:** Inject valid JSON-LD rich snippets (Organization, WebSite, Article, Product, SoftwareApp, or FAQPage) and validate with `npm run validate-schema`.
-4. **Branded Social Assets:** Generate `og-image.svg` via `npm run og`.
+4. **Visual Previews & Social Assets:** Generate `og-image.svg` via `npm run og`, preview SERP cards via `npm run preview`, and compile live score badge via `npm run badge`.
 5. **Heading Hierarchy Normalization:** Ensure every page has exactly one `<h1>` that contains the primary keyword, and ensure heading levels progress sequentially (`h1` -> `h2` -> `h3`).
 6. **Technical Crawlability Assets:** Generate or configure `sitemap.xml`, `robots.txt`, and `llms.txt` via `npm run sitemap`.
 7. **Verification DoD:** Ensure the re-audit score reaches **≥ 90/100 (Grade A)**.

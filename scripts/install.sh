@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-
 # SPS SEO Skill Installer
 # Version: 1.4.0
 # Installs SPS SEO into global or local agent skills directories.
+# Supports: Claude, Cursor, Codex, Windsurf, OpenCode, Antigravity/Gemini
 
 set -euo pipefail
 
@@ -10,109 +10,130 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TARGET_MODE="global"
 COPY_MODE=false
 DRY_RUN=false
+FORCE=false
+
+# Agent directories
+GLOBAL_DIR="$HOME/.agents/skills/sps-seo"
+GEMINI_DIR="$HOME/.gemini/config/skills/sps-seo"
+CURSOR_DIR="$HOME/.cursor/skills/sps-seo"
+WINDSURF_DIR="$HOME/.windsurf/skills/sps-seo"
+LOCAL_DIR="$(pwd)/.agents/skills/sps-seo"
 
 print_help() {
   cat << EOF
-SPS SEO Skill Installer
+SPS SEO Skill Installer v1.4.0
 
 Usage:
   ./scripts/install.sh [options]
 
 Options:
   --global        Install globally to ~/.agents/skills/sps-seo (default)
-  --local         Install locally to ./.agents/skills/sps-seo in current directory
+  --local         Install locally to ./.agents/skills/sps-seo
   --copy          Copy files instead of creating symbolic links
+  --force         Overwrite existing installation without prompting
   --dry-run       Show actions without executing
   -h, --help      Show this help message
+
+Examples:
+  ./scripts/install.sh                  # Global install (symlink)
+  ./scripts/install.sh --copy           # Global install (copy)
+  ./scripts/install.sh --local          # Local install for current project
+  ./scripts/install.sh --force          # Overwrite existing
 EOF
 }
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --global)
-      TARGET_MODE="global"
-      shift
-      ;;
-    --local)
-      TARGET_MODE="local"
-      shift
-      ;;
-    --copy)
-      COPY_MODE=true
-      shift
-      ;;
-    --dry-run)
-      DRY_RUN=true
-      shift
-      ;;
-    -h|--help)
-      print_help
-      exit 0
-      ;;
-    *)
-      echo "Unknown option: $1"
-      print_help
-      exit 1
-      ;;
+    --global) TARGET_MODE="global"; shift ;;
+    --local) TARGET_MODE="local"; shift ;;
+    --copy) COPY_MODE=true; shift ;;
+    --force) FORCE=true; shift ;;
+    --dry-run) DRY_RUN=true; shift ;;
+    -h|--help) print_help; exit 0 ;;
+    *) echo "Unknown option: $1"; print_help; exit 1 ;;
   esac
 done
 
-if [[ "$TARGET_MODE" == "global" ]]; then
-  DEST_DIR="$HOME/.agents/skills/sps-seo"
-else
-  DEST_DIR="$(pwd)/.agents/skills/sps-seo"
-fi
+install_to_dir() {
+  local dest_dir="$1"
+  local dest_name="$2"
+  
+  if $DRY_RUN; then
+    echo "[DRY RUN] Would install to $dest_dir"
+    return
+  fi
+  
+  # Create parent directory
+  mkdir -p "$(dirname "$dest_dir")"
+  
+  # Handle existing installation
+  if [ -L "$dest_dir" ] || [ -d "$dest_dir" ]; then
+    if ! $FORCE; then
+      echo "⚠️  $dest_name already installed at $dest_dir"
+      read -p "Overwrite? (y/N) " -n 1 -r
+      echo
+      if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Skipping $dest_name"
+        return
+      fi
+    fi
+    echo "Removing existing $dest_name installation..."
+    rm -rf "$dest_dir"
+  fi
+  
+  # Install
+  if $COPY_MODE; then
+    echo "Copying SPS SEO to $dest_dir..."
+    cp -R "$SCRIPT_DIR" "$dest_dir"
+  else
+    echo "Creating symlink $SCRIPT_DIR -> $dest_dir..."
+    ln -s "$SCRIPT_DIR" "$dest_dir"
+  fi
+  
+  # Verify
+  if [ -f "$dest_dir/SKILL.md" ]; then
+    echo "✓ Successfully installed $dest_name!"
+  else
+    echo "✗ Error: Installation failed for $dest_name"
+    return 1
+  fi
+}
 
 echo "=============================================="
-echo "          SPS SEO SKILL INSTALLER            "
+echo "       SPS SEO SKILL INSTALLER v1.4.0        "
 echo "=============================================="
 echo "Source:      $SCRIPT_DIR"
-echo "Destination: $DEST_DIR"
 echo "Mode:        $([ "$COPY_MODE" = true ] && echo "Copy" || echo "Symlink")"
 echo "Dry Run:     $DRY_RUN"
+echo "Force:       $FORCE"
 echo "----------------------------------------------"
 
-if [ "$DRY_RUN" = true ]; then
-  echo "[DRY RUN] Would create parent directory: $(dirname "$DEST_DIR")"
-  if [ "$COPY_MODE" = true ]; then
-    echo "[DRY RUN] Would copy $SCRIPT_DIR to $DEST_DIR"
-  else
-    echo "[DRY RUN] Would link $SCRIPT_DIR -> $DEST_DIR"
-  fi
-  echo "[DRY RUN] Finished without changes."
-  exit 0
-fi
-
-# Ensure parent directory exists
-mkdir -p "$(dirname "$DEST_DIR")"
-
-# Remove existing link/directory if present
-if [ -L "$DEST_DIR" ]; then
-  echo "Removing existing symlink at $DEST_DIR..."
-  rm "$DEST_DIR"
-elif [ -d "$DEST_DIR" ]; then
-  echo "Backing up existing directory at $DEST_DIR to ${DEST_DIR}.bak..."
-  rm -rf "${DEST_DIR}.bak"
-  mv "$DEST_DIR" "${DEST_DIR}.bak"
-fi
-
-# Install
-if [ "$COPY_MODE" = true ]; then
-  echo "Copying SPS SEO skill to $DEST_DIR..."
-  cp -R "$SCRIPT_DIR" "$DEST_DIR"
+if [[ "$TARGET_MODE" == "global" ]]; then
+  echo "Installing to all detected agent directories..."
+  install_to_dir "$GLOBAL_DIR" "Global (Claude/OpenCode)"
+  install_to_dir "$GEMINI_DIR" "Gemini/Antigravity"
+  install_to_dir "$CURSOR_DIR" "Cursor"
+  install_to_dir "$WINDSURF_DIR" "Windsurf"
 else
-  echo "Creating symlink $SCRIPT_DIR -> $DEST_DIR..."
-  ln -s "$SCRIPT_DIR" "$DEST_DIR"
+  install_to_dir "$LOCAL_DIR" "Local"
 fi
 
-# Verify
-if [ -f "$DEST_DIR/SKILL.md" ]; then
-  echo "✓ Successfully verified SKILL.md in destination!"
-  echo ""
-  echo "SPS SEO is now installed and ready for use by AI agents."
-  echo "Trigger phrases: /sps-seo, 'optimize SEO', 'run technical SEO audit'"
-else
-  echo "✗ Warning: Destination missing SKILL.md. Please check the install path."
-  exit 1
-fi
+echo ""
+echo "=============================================="
+echo "  SPS SEO v1.4.0 installed successfully!      "
+echo "=============================================="
+echo ""
+echo "Quick Start:"
+echo "  1. Run: node scripts/init.mjs          # Configure your project"
+echo "  2. Run: node scripts/audit.mjs         # Get baseline SEO score"
+echo "  3. Run: node scripts/fix.mjs --apply   # Auto-fix issues"
+echo "  4. Run: node scripts/audit.mjs         # Verify improvement"
+echo ""
+echo "Trigger phrases for AI agents:"
+echo "  /sps-seo, 'optimize SEO', 'run technical SEO audit'"
+echo "  'fix meta tags', 'generate schema', 'improve ranking'"
+echo ""
+echo "To update: ./scripts/update.sh"
+echo "To uninstall: ./scripts/uninstall.sh"
+echo ""

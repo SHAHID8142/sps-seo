@@ -184,10 +184,10 @@ npm run test:phase2         # Run the vertical/expansion test suite only
 ## 🚀 Quick Installation
 
 ### 1-Click Global Install (Recommended)
-Installs into your global skill stack (`~/.agents/skills/sps-seo`):
+Installs into all detected agent directories (Claude, Cursor, Windsurf, Gemini):
 
 ```bash
-git clone https://github.com/your-username/sps-seo.git
+git clone https://github.com/shahid/sps-seo.git
 cd sps-seo
 ./scripts/install.sh --global
 ```
@@ -197,6 +197,97 @@ Installs into a specific project's `./.agents/skills/sps-seo`:
 
 ```bash
 ./scripts/install.sh --local
+```
+
+### Copy Mode (Standalone)
+Creates a full copy instead of a symlink (no link to source):
+
+```bash
+./scripts/install.sh --copy
+```
+
+### Force Overwrite
+Overwrite existing installations without prompting:
+
+```bash
+./scripts/install.sh --force
+```
+
+---
+
+## 🔄 Updating to Latest Version
+
+### Check for Updates
+```bash
+./scripts/update.sh --check
+```
+
+### Update to Latest
+```bash
+./scripts/update.sh
+```
+
+### Force Reinstall
+```bash
+./scripts/update.sh --force
+```
+
+**How it works:**
+- If installed via `git clone`: pulls latest changes
+- If installed via symlink: updates the source repository
+- If installed via copy: reinstalls from GitHub
+
+---
+
+## 🗑️ Uninstalling
+
+### Interactive Uninstall (prompts for each installation)
+```bash
+./scripts/uninstall.sh
+```
+
+### Force Uninstall (no prompts)
+```bash
+./scripts/uninstall.sh --force
+```
+
+### Preview What Would Be Removed
+```bash
+./scripts/uninstall.sh --dry-run
+```
+
+**Removes from all locations:**
+- `~/.agents/skills/sps-seo` (Claude, OpenCode)
+- `~/.gemini/config/skills/sps-seo` (Gemini, Antigravity)
+- `~/.cursor/skills/sps-seo` (Cursor)
+- `~/.windsurf/skills/sps-seo` (Windsurf)
+- `./.agents/skills/sps-seo` (Local)
+
+---
+
+## 📋 Quick Start Workflow
+
+```bash
+# 1. Configure your project
+node scripts/init.mjs
+
+# 2. Run baseline audit
+node scripts/audit.mjs --json
+
+# 3. Fix all issues
+node scripts/fix.mjs --dry-run    # Preview first
+node scripts/fix.mjs --apply      # Apply fixes
+
+# 4. Verify improvement
+node scripts/audit.mjs
+
+# 5. Generate assets
+node scripts/sitemap.mjs
+node scripts/og.mjs
+node scripts/badge.mjs
+
+# 6. Notify search engines
+node scripts/ping-indexnow.mjs
 ```
 
 ---

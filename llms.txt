@@ -1,9 +1,0 @@
-# Acme Software
-
-> Streamline your multi-cloud infrastructure with Acme's automated orchestration engine. Real-time telemetry, zero-trust security, and instant deploys.
-
-Optional details: cloud orchestration, infrastructure automation, kubernetes management, devops platform
-
-## Canonical Routes
-
-- [Homepage](https://example.com)

@@ -26,16 +26,19 @@ Compatible with **Claude**, **Cursor**, **Codex**, **Antigravity (Gemini)**, **O
 6. [Updating](#updating)
 7. [Uninstalling](#uninstalling)
 8. [Quick Start](#quick-start)
-9. [Complete Command Reference](#complete-command-reference)
-10. [Workflow Guides](#workflow-guides)
-11. [Agent Integration](#agent-integration)
-12. [Configuration](#configuration)
-13. [CI/CD Integration](#cicd-integration)
-14. [Testing](#testing)
-15. [Architecture](#architecture)
-16. [Troubleshooting](#troubleshooting)
-17. [Contributing](#contributing)
-18. [License](#license)
+9. [How to Use (Non-Coders Welcome!)](#how-to-use-for-everyone---non-coders-welcome)
+   - [What Does It Do?](#what-does-sps-seo-actually-do)
+   - [Understanding Your Score](#understanding-your-score)
+   - [Audit Output Example](#what-does-the-audit-output-look-like)
+   - [Before & After](#before--after-example)
+   - [Step-by-Step Guide](#step-by-step-complete-seo-audit-for-beginners)
+   - [Understanding Errors](#understanding-error-messages)
+   - [Common Tasks](#common-tasks-explained)
+   - [All Commands Explained](#understanding-all-commands-plain-english-translation)
+   - [Scenario Guides](#scenario-based-guides)
+   - [FAQ](#faq-frequently-asked-questions)
+10. [License](#license)
+11. [Quick Reference Card](#quick-reference-card)
 
 ---
 
@@ -341,505 +344,412 @@ node scripts/audit.mjs
 
 ---
 
-## Complete Command Reference
+## How to Use (For Everyone - Non-Coders Welcome!)
 
-### 1. Core Commands
+Don't worry if you're not a technical person! SPS SEO is designed to be simple. This section explains everything in plain English.
 
-| Command | Description |
-|---------|-------------|
-| `npm run init` | Interactive setup wizard for `sps-seo-config.json` |
-| `npm run audit` | Deterministic 100-point audit scanner |
-| `npm run audit:json` | Output audit in pure JSON |
-| `npm run fix` | Apply automatic fixes |
-| `npm run fix:dry` | Preview automatic fixes |
+### What Does SPS SEO Actually Do?
 
-### 2. On-Page SEO
+Think of SPS SEO as a **doctor for your website**. Just like a doctor checks your health, SPS SEO checks your website's **SEO health** — how well it can be found on Google and other search engines.
 
-| Command | Description |
-|---------|-------------|
-| `npm run keyword` | Keyword density, prominence & intent analyzer |
-| `npm run tfidf` | TF*IDF & semantic entity scanner |
-| `npm run snippet` | Featured snippet & 40-60w answer capsule optimizer |
-| `npm run cannibalization` | Keyword cannibalization & duplicate meta detector |
+Here's what it checks:
 
-### 3. Technical SEO
+| What It Checks | What That Means in Plain English |
+|----------------|--------------------------------|
+| **Title Tags** | Does each page have a clear, descriptive title? (This is what appears in Google search results) |
+| **Meta Descriptions** | Does each page have a short summary that tells people what the page is about? |
+| **Headings (H1, H2, etc.)** | Is your content organized with clear headings like a book has chapters? |
+| **Image Alt Text** | Do your images have descriptions? (This helps blind people and Google understand your images) |
+| **Schema Markup** | Does your website tell search engines specific information (like "this is a product" or "this is a recipe")? |
+| **Internal Links** | Are your pages linked to each other so visitors can navigate? |
+| **Sitemap** | Do you have a "map" of your website that search engines can read? |
+| **Page Speed** | Does your website load quickly? (Slow websites rank lower) |
+| **Mobile-Friendly** | Does your website work well on phones? |
+| **Security** | Is your website protected with proper security settings? |
 
-| Command | Description |
-|---------|-------------|
-| `npm run links` | Internal link graph & orphan page analyzer |
-| `npm run redirect` | 301/302 redirects, chains & trailing slash audit |
-| `npm run sitemap` | Compile sitemap.xml, robots.txt, llms.txt & llms-full.txt |
-| `npm run sitemap:validate` | Sitemap URL resolution, lastmod, index & hreflang checks |
-| `npm run rss` | Generate RSS 2.0 feed from content pages |
+### Understanding Your Score
 
-### 4. Vertical SEO
+When you run an audit, you get a **score from 0 to 100**:
 
-| Command | Description |
-|---------|-------------|
-| `npm run video` | Video SEO (VideoObject schema, embeds, video sitemap) |
-| `npm run news` | News SEO (NewsArticle schema, freshness, news sitemap) |
-| `npm run ecom` | E-commerce SEO (Product/Offer schema, pagination canonicals) |
-| `npm run local` | Local SEO (LocalBusiness schema, NAP consistency) |
-| `npm run dup` | Near-duplicate content & duplicate-title detector |
+| Score | Grade | What It Means |
+|-------|-------|---------------|
+| **90-100** | A (Excellent) | Your website is in great shape! Google will love it. |
+| **80-89** | B (Good) | Pretty good, but there are some things to improve. |
+| **70-79** | C (Average) | You're missing several important SEO elements. |
+| **60-69** | D (Below Average) | Your website needs significant SEO work. |
+| **0-59** | F (Failing) | Your website is hard for Google to find. Major improvements needed. |
 
-### 5. Performance & Security
+**Goal: Get to 90+ (Grade A)**
 
-| Command | Description |
-|---------|-------------|
-| `npm run perf` | Core Web Vitals & asset budget scanner |
-| `npm run bundle` | JavaScript bundle weight & third-party scripts |
-| `npm run security` | Enterprise security headers & best practices scanner |
-| `npm run security:json` | Output security scan in pure JSON |
-| `npm run secrets` | Hardcoded secrets & credential leak scanner |
-| `npm run a11y` | Accessibility (WCAG) scanner |
-| `npm run lighthouse` | Lighthouse CI performance audit |
+### What Does the Audit Output Look Like?
 
-### 6. Intelligence & Preview
+When you run `node scripts/audit.mjs`, you'll see something like this:
 
-| Command | Description |
-|---------|-------------|
-| `npm run competitor` | Scrapes competitor URLs & generates Topic Gap Matrix |
-| `npm run compare` | Side-by-side technical & content comparison |
-| `npm run ranking` | 15-signal SERP ranking probability engine |
-| `npm run rank-tracker` | Track ranking momentum from GSC/CSV data |
-| `npm run preview` | Generates interactive HTML SERP & social preview dashboard |
-| `npm run crawl` | Polite robots-aware live crawler |
-| `npm run pagespeed` | PageSpeed Insights & CrUX field data |
-| `npm run gsc` | Google Search Console data analyzer |
-| `npm run logs` | Server access log analyzer |
-| `npm run monorepo` | Monorepo structure detector |
+```
+SPS SEO AUDIT REPORT
+====================
 
-### 7. Asset Generation
+  SCORE: 72/100 (Grade C - Average)
 
-| Command | Description |
-|---------|-------------|
-| `npm run og` | Generate branded 1200x630 og-image.svg |
-| `npm run badge` | Generate live SVG SEO score badge |
-| `npm run validate-schema` | Schema.org JSON-LD validator |
-| `npm run i18n` | Multilingual hreflang reciprocity check |
+  [PASS] robots.txt found
+  [PASS] sitemap.xml found
+  [FAIL] 3 images missing alt text
+  [FAIL] 2 pages missing meta description
+  [WARN] Page title too long (75 chars, max 60)
+  [FAIL] No JSON-LD schema found
+  [PASS] Heading hierarchy correct
+  [WARN] 1 orphan page detected
 
-### 8. Indexing & CI
+  Run 'node scripts/fix.mjs --apply' to fix 4 issues
+```
 
-| Command | Description |
-|---------|-------------|
-| `npm run ping-indexnow` | Alert IndexNow (Bing/Yandex) with updated routes |
-| `npm test` | Run comprehensive automated test suite (core + verticals) |
-| `npm run test:core` | Run core test suite only |
-| `npm run test:phase2` | Run vertical/expansion test suite only |
+**How to read it:**
+- **[PASS]** = Good! No action needed
+- **[FAIL]** = Problem that hurts your SEO. Fix this!
+- **[WARN]** = Not critical, but should be improved
 
-### 9. Unified CLI
+### Before & After Example
 
+**Before SPS SEO:**
+```
+Score: 35/100 (Grade F)
+- No robots.txt
+- No sitemap.xml
+- 12 images without alt text
+- No meta descriptions
+- No schema markup
+- Page title missing
+```
+
+**After running `fix.mjs --apply`:**
+```
+Score: 89/Grade B
+- [PASS] robots.txt created
+- [PASS] sitemap.xml created
+- [PASS] All images now have alt text
+- [PASS] Meta descriptions added
+- [PASS] Schema markup injected
+- [PASS] Page title optimized
+```
+
+**Result: +54 points improvement!**
+
+---
+
+### Step-by-Step: Complete SEO Audit (For Beginners)
+
+#### Step 1: Open Your Computer's Terminal
+
+- **Mac**: Press `Cmd + Space`, type "Terminal", press Enter
+- **Windows**: Press `Win + R`, type "cmd", press Enter
+- **Linux**: Press `Ctrl + Alt + T`
+
+#### Step 2: Navigate to Your Website's Folder
+
+Type this command and press Enter:
 ```bash
-# Use the unified CLI for any command
-npx sps-seo <command>
-
-# Examples
-npx sps-seo audit --json
-npx sps-seo fix --apply
-npx sps-seo security --json
+cd /path/to/your/website
 ```
 
----
+(Replace `/path/to/your/website` with the actual location of your website files)
 
-## Workflow Guides
+#### Step 3: Configure SPS SEO (One-Time Setup)
 
-### Full SEO Overhaul
-
-```
-PHASE 1: DISCOVERY
-1. Run: node scripts/init.mjs (if not configured)
-2. Run: node scripts/audit.mjs --json (baseline score)
-3. Run: node scripts/links.mjs (internal links)
-4. Run: node scripts/cannibalization.mjs (keyword conflicts)
-5. Run: node scripts/security.mjs (security audit)
-6. Run: node scripts/perf.mjs (performance)
-
-PHASE 2: EXECUTION
-7. Run: node scripts/fix.mjs --dry-run (preview fixes)
-8. Run: node scripts/fix.mjs --apply (apply fixes)
-9. Run: node scripts/sitemap.mjs (generate sitemaps)
-10. Run: node scripts/og.mjs (generate social image)
-11. Run: node scripts/validate-schema.mjs (validate schemas)
-
-PHASE 3: VERIFICATION
-12. Run: node scripts/audit.mjs (final score >= 90)
-13. Run: node scripts/preview.mjs (visual preview)
-14. Run: node scripts/badge.mjs (README badge)
-15. Run: node scripts/ping-indexnow.mjs (notify search engines)
-```
-
-### Pre-Deploy Checklist
-
-```
-1. node scripts/audit.mjs (score >= 90)
-2. node scripts/lighthouse.mjs (performance)
-3. node scripts/security.mjs (no secret leaks)
-4. node scripts/sitemap:validate.mjs (valid sitemap)
-5. node scripts/redirect.mjs (no broken redirects)
-6. node scripts/dup.mjs (no duplicate content)
-```
-
-### Single-Task Prompts
-
-| Task | Prompt |
-|------|--------|
-| **Fix meta tags** | "Run `node scripts/audit.mjs` and fix all missing/duplicate meta tags" |
-| **Generate schema** | "Generate JSON-LD schema for this page type and validate with `node scripts/validate-schema.mjs`" |
-| **Fix images** | "Audit all images: missing alt tags, oversized files, missing dimensions" |
-| **Internal links** | "Run `node scripts/links.mjs` and fix all orphan pages" |
-| **Keyword check** | "Run `node scripts/keyword.mjs` and optimize keyword density to 1-2.5%" |
-| **Performance** | "Run `node scripts/perf.mjs` and fix Core Web Vitals issues" |
-| **Security** | "Run `node scripts/security.mjs` and add missing security headers" |
-| **Competitor gap** | "Run `node scripts/competitor.mjs <url>` and list content gaps" |
-| **Local SEO** | "Run `node scripts/local.mjs` and fix NAP consistency" |
-| **Video SEO** | "Run `node scripts/video.mjs` and add VideoObject schema" |
-
----
-
-## Agent Integration
-
-### Claude Code
-
-**Installation:** `./scripts/install.sh --global` installs to `~/.agents/skills/sps-seo`
-
-**Usage:**
-```
-Run: node scripts/audit.mjs --json
-Run: node scripts/fix.mjs --apply
-```
-
-See [hosts/claude.md](hosts/claude.md) for details.
-
-### Cursor
-
-**Installation:** `./scripts/install.sh --global` installs to `~/.cursor/skills/sps-seo`
-
-**Usage:**
-- Mirror `SYSTEM-PROMPT.md` core directives into `.cursorrules` or `.cursor/rules/seo.mdc`
-- Run commands in Cursor terminal
-
-See [hosts/cursor.md](hosts/cursor.md) for details.
-
-### OpenAI Codex
-
-**Usage:**
-- In web UI: Load instructions from `SYSTEM-PROMPT.md`
-- In sandbox: Run `node scripts/audit.mjs` directly
-
-See [hosts/codex.md](hosts/codex.md) for details.
-
-### Windsurf (Cascade)
-
-**Installation:** `./scripts/install.sh --global` installs to `~/.windsurf/skills/sps-seo`
-
-**Usage:**
-- Store brand/keyword/domain facts from `sps-seo-config.json` as Cascade Memories
-- Run commands via Cascade's command tool
-
-See [hosts/windsurf.md](hosts/windsurf.md) for details.
-
-### Antigravity / Gemini
-
-**Installation:** `./scripts/install.sh --global` installs to `~/.gemini/config/skills/sps-seo`
-
-**Usage:**
-- Use `run_command` to execute `npm run audit` and `npm run fix`
-- Write audit findings to `sps-seo-audit-report.md`
-
-See [hosts/antigravity.md](hosts/antigravity.md) for details.
-
-### OpenCode
-
-**Installation:** `./scripts/install.sh --global` installs to `~/.agents/skills/sps-seo`
-
-**Usage:**
-- Execute commands using native bash tools
-- Reference `sps-seo-config.json` before proposing metadata changes
-
-See [hosts/opencode.md](hosts/opencode.md) for details.
-
-### MCP Server
-
-SPS SEO includes a full MCP (Model Context Protocol) server for integration with MCP-compatible agents:
-
-```bash
-npm run mcp
-```
-
-Exposes all 40+ tools via MCP 2024-11-05 protocol over stdio.
-
----
-
-## Configuration
-
-### Initial Setup
-
-Run the interactive wizard:
-
+Run this command:
 ```bash
 node scripts/init.mjs
 ```
 
-This creates `sps-seo-config.json` with:
-- Brand name and description
-- Target keywords
-- Author information (E-E-A-T)
-- Domain URL
-- Social media handles
-- Theme colors
+It will ask you some questions:
+- **Brand name**: Your company or website name
+- **Description**: What your website is about
+- **Keywords**: What people might type into Google to find you
+- **Your name**: (For Google's E-E-A-T signals)
+- **Website URL**: Your full website address (like `https://yoursite.com`)
 
-### Configuration File Format
+This creates a configuration file that SPS SEO uses for all future audits.
 
-```json
-{
-  "brand": "Your Brand",
-  "description": "Your brand description",
-  "keywords": ["keyword1", "keyword2"],
-  "author": "Author Name",
-  "domain": "https://example.com",
-  "social": {
-    "twitter": "@handle",
-    "github": "username"
-  },
-  "colors": {
-    "primary": "#3b82f6",
-    "secondary": "#10b981"
-  }
-}
+#### Step 4: Run Your First Audit
+
+Run this command:
+```bash
+node scripts/audit.mjs
 ```
 
-### Dual Memory Synchronization
+**What happens**: SPS SEO scans all your website files and gives you a detailed report with:
+- Your overall score (0-100)
+- What's missing or broken
+- Specific suggestions to improve
 
-If your project uses the SPS workflow (`.sps/` directory), run:
+#### Step 5: Fix Problems Automatically
+
+Run this command:
+```bash
+node scripts/fix.mjs --apply
+```
+
+**What happens**: SPS SEO automatically:
+- Creates missing `robots.txt` (tells search engines which pages to index)
+- Creates missing `sitemap.xml` (lists all your pages for search engines)
+- Creates `llms.txt` (helps AI search engines understand your site)
+- Adds alt text to images that are missing it
+- Adds missing meta descriptions
+
+**Don't worry**: The fix command only ADDS missing files. It won't delete or break anything.
+
+### Understanding Error Messages
+
+If you see an error, don't panic! Here are common ones:
+
+| Error | What It Means | What To Do |
+|-------|---------------|------------|
+| `command not found: node` | Node.js is not installed | Install Node.js from [nodejs.org](https://nodejs.org/) |
+| `No such file or directory` | You're in the wrong folder | Make sure you `cd` into your website's folder |
+| `Cannot find module` | Script dependencies missing | Run `npm install` in the sps-seo folder |
+| `Permission denied` | Script not executable | Run `chmod +x scripts/*.sh` |
+| `Score: 0/100` on empty folder | No website files found | Make sure you're in the right folder |
+| `Deprecated entrypoint` warning | You're using an old script name | This is harmless, it still works |
+
+**Tip**: Most errors can be fixed by making sure:
+1. You have Node.js installed (run `node --version` to check)
+2. You're in your website's folder (run `pwd` to see where you are)
+3. You've run `init` before `audit`
+
+### Common Tasks Explained
+
+#### "I want to check if my pages rank well for specific keywords"
 
 ```bash
-node scripts/sync-config.mjs
+node scripts/keyword.mjs
 ```
 
-This maintains bidirectional synchronization between `sps-seo-config.json` and `.sps/seo.json`.
+This checks if your target keywords appear in the right places:
+- Page title
+- First heading (H1)
+- First 100 words
+- Throughout the content (but not too much!)
 
----
-
-## CI/CD Integration
-
-### GitHub Actions Quality Gate
-
-SPS SEO includes a GitHub Actions workflow that blocks PRs if the SEO score drops below 90/100:
-
-```yaml
-# .github/workflows/seo-check.yml
-name: SPS SEO Quality Gate
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-
-jobs:
-  seo-audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-      - run: npm test
-      - run: node scripts/audit.mjs --json
-      - run: node tests/test-phase2.mjs
-      - run: node scripts/validate-schema.mjs
-      - run: node scripts/internal-links.mjs
-      - name: Enforce SEO Quality Gate (Score >= 90)
-        run: |
-          if [ "$AUDIT_SCORE" -lt 90 ]; then
-            echo "SEO Quality Gate FAILED"
-            exit 1
-          fi
-```
-
-### Cross-Version CI Matrix
-
-```yaml
-# .github/workflows/ci-matrix.yml
-name: SPS SEO Cross-Version CI
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-  schedule:
-    - cron: '0 6 * * 1'  # Weekly regression
-
-jobs:
-  cross-version:
-    strategy:
-      matrix:
-        node-version: [18, 20, 22, 24]
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-      - run: node --check scripts/*.mjs
-      - run: node tests/test-audit.mjs
-      - run: node tests/test-phase2.mjs
-```
-
-### Pre-Commit Hook
-
-Install a pre-commit hook that runs audit before each commit:
+#### "I want to see what my site looks like in Google search results"
 
 ```bash
-./scripts/setup-git-hook.sh
+node scripts/preview.mjs
 ```
 
----
+This creates an HTML file (`public/seo-preview.html`) that shows you:
+- How your page appears in Google Desktop
+- How it appears in Google Mobile
+- How it looks when shared on Twitter/X
+- How it appears in Facebook/LinkedIn previews
 
-## Testing
-
-### Run All Tests
+#### "I want to add structured data so Google shows rich results"
 
 ```bash
-npm test
+node scripts/validate-schema.mjs
 ```
 
-### Run Core Tests Only
+This checks if your Schema.org markup is correct. Schema markup tells Google specific things like:
+- "This is a product with a price of $29.99"
+- "This is a recipe that takes 30 minutes"
+- "This is an event on January 15th"
+
+#### "I want to check if my website is fast enough"
 
 ```bash
-npm run test:core
+node scripts/perf.mjs
 ```
 
-### Run Phase 2 Tests Only
+This checks:
+- Total page size (should be under 1.5MB)
+- Individual image sizes (should be under 200KB each)
+- Whether images have dimensions set (prevents layout shifts)
+- Font loading behavior
+
+#### "I want to check if my website is secure"
 
 ```bash
-npm run test:phase2
+node scripts/security.mjs
 ```
 
-### Test Results
+### Understanding All Commands (Plain English Translation)
 
-- **118 core assertions** — audit engine, scoring, parsing
-- **29 phase 2 assertions** — vertical SEO tools
-- **147 total assertions** — all passing
+| Command | What It Does in Plain English |
+|---------|-------------------------------|
+| `init` | First-time setup - answers questions about your website |
+| `audit` | Health check - gives you a score and lists problems |
+| `fix` | Doctor - automatically fixes common problems |
+| `keyword` | Checks if you're using the right words in the right places |
+| `tfidf` | Advanced content analysis - finds missing topics |
+| `snippet` | Optimizes your content to appear in Google's featured snippets |
+| `cannibalization` | Checks if multiple pages compete for the same search terms |
+| `links` | Maps your internal links and finds orphan pages |
+| `redirect` | Checks for broken redirects and loops |
+| `sitemap` | Creates a sitemap file for search engines |
+| `sitemap:validate` | Checks if your sitemap is correct |
+| `rss` | Creates an RSS feed for your content |
+| `video` | Checks video SEO (schema, embeds, video sitemap) |
+| `news` | Checks news article SEO (freshness, news sitemap) |
+| `ecom` | Checks product page SEO (prices, availability) |
+| `local` | Checks local business SEO (address, phone, maps) |
+| `dup` | Finds duplicate content across your site |
+| `perf` | Checks page speed and performance |
+| `bundle` | Analyzes JavaScript file sizes |
+| `security` | Checks security settings |
+| `secrets` | Scans for accidentally exposed passwords |
+| `a11y` | Checks accessibility for disabled users |
+| `lighthouse` | Runs Google's Lighthouse performance test |
+| `competitor` | Analyzes your competitors' websites |
+| `compare` | Compares your site side-by-side with a competitor |
+| `ranking` | Calculates how likely you are to rank #1 |
+| `preview` | Shows how your site looks in search results |
+| `crawl` | Crawls your live website like Google does |
+| `pagespeed` | Gets real Google PageSpeed data |
+| `gsc` | Imports data from Google Search Console |
+| `logs` | Analyzes your server logs for crawl issues |
+| `monorepo` | Detects if you have a multi-package project |
+| `og` | Creates social media preview images |
+| `badge` | Creates a score badge for your README |
+| `i18n` | Checks multi-language hreflang tags |
+| `sync-config` | Syncs config between files |
+### Scenario-Based Guides
 
----
+#### Scenario 1: "I just built a website and want to make sure it's SEO-ready"
 
-## Architecture
-
-### Directory Structure
-
-```
-sps-seo/
-├── scripts/                  # 47 CLI tools (zero dependencies)
-│   ├── audit.mjs            # Deterministic 100-point audit engine
-│   ├── fix.mjs              # Automated remediation
-│   ├── init.mjs             # Interactive config wizard
-│   ├── lib/
-│   │   └── core.mjs         # Shared utilities (VERSION, walkFiles, etc.)
-│   ├── install.sh           # Multi-agent installer
-│   ├── uninstall.sh         # Complete uninstaller
-│   ├── update.sh            # Auto-update from GitHub
-│   └── ...                  # 40+ specialized SEO tools
-├── hosts/                   # Agent-specific integration guides
-│   ├── claude.md
-│   ├── cursor.md
-│   ├── codex.md
-│   ├── windsurf.md
-│   ├── antigravity.md
-│   └── opencode.md
-├── adapters/                # Framework-specific playbooks
-│   ├── nextjs-app.md
-│   ├── nextjs-pages.md
-│   ├── astro.md
-│   ├── vite-react.md
-│   ├── static-html.md
-│   ├── wordpress.md
-│   ├── shopify.md
-│   ├── webflow.md
-│   ├── headless-cms.md
-│   └── universal-fallback.md
-├── schemas/                 # 17 JSON-LD schema templates
-│   ├── article.json
-│   ├── product.json
-│   ├── faq.json
-│   ├── local-business.json
-│   └── ...
-├── guides/                  # Deep-dive playbooks
-│   ├── aeo-geo-optimization.md
-│   ├── lighthouse-100-playbook.md
-│   ├── core-web-vitals-checklist.md
-│   └── ...
-├── tests/                   # Automated test suites
-│   ├── test-audit.mjs       # 118 core assertions
-│   └── test-phase2.mjs      # 29 vertical assertions
-├── .github/workflows/       # CI/CD workflows
-│   ├── seo-check.yml        # Quality gate (score >= 90)
-│   └── ci-matrix.yml        # Cross-version testing
-├── SKILL.md                 # AI agent skill definition
-├── SYSTEM-PROMPT.md         # Master system prompt
-├── METHOD-CARD.md           # 10 hard laws of SPS SEO
-├── PROMPTS.md               # Master prompts for every SEO task
-├── README.md                # This file
-├── VERSION                  # Current version (1.4.0)
-├── package.json             # npm scripts and bin
-└── LICENSE                  # MIT License
-```
-
-### Supported Frameworks
-
-| Framework | Detection | Adapter |
-|-----------|-----------|---------|
-| Next.js App Router | `app/layout.tsx`, `export const metadata` | [adapters/nextjs-app.md](adapters/nextjs-app.md) |
-| Next.js Pages Router | `pages/_app.tsx`, `next/head` | [adapters/nextjs-pages.md](adapters/nextjs-pages.md) |
-| Astro | `src/layouts/Layout.astro`, frontmatter | [adapters/astro.md](adapters/astro.md) |
-| Vite/React SPA | `index.html`, `react-helmet-async` | [adapters/vite-react.md](adapters/vite-react.md) |
-| Static HTML | Direct semantic `<head>` | [adapters/static-html.md](adapters/static-html.md) |
-| WordPress | `wp-content/` | [adapters/wordpress.md](adapters/wordpress.md) |
-| Shopify | `shopify.theme` | [adapters/shopify.md](adapters/shopify.md) |
-| Webflow | `webflow.css` | [adapters/webflow.md](adapters/webflow.md) |
-| Headless CMS | Sanity/Contentful/Strapi | [adapters/headless-cms.md](adapters/headless-cms.md) |
-| Universal Fallback | Any other project | [adapters/universal-fallback.md](adapters/universal-fallback.md) |
-
----
-
-## Troubleshooting
-
-### Common Issues
-
-#### "Command not found: node"
-Install Node.js >= 18.0.0 from [nodejs.org](https://nodejs.org/)
-
-#### "Permission denied: ./scripts/install.sh"
-Make scripts executable:
 ```bash
-chmod +x scripts/*.sh
+# 1. Configure SPS SEO
+node scripts/init.mjs
+
+# 2. Run first audit
+node scripts/audit.mjs
+
+# 3. Fix all issues
+node scripts/fix.mjs --apply
+
+# 4. Create sitemap and social image
+node scripts/sitemap.mjs
+node scripts/og.mjs
+
+# 5. Verify score is 90+
+node scripts/audit.mjs
 ```
 
-#### "Could not check for updates"
-Check your internet connection or verify the repository URL:
+#### Scenario 2: "My website exists but doesn't get traffic"
+
 ```bash
-SPS_SEO_REPO_URL=https://github.com/user/repo.git ./scripts/update.sh --check
+# 1. Run comprehensive audit
+node scripts/audit.mjs
+
+# 2. Check keywords are properly used
+node scripts/keyword.mjs
+
+# 3. Check for duplicate content
+node scripts/dup.mjs
+
+# 4. Check internal linking
+node scripts/links.mjs
+
+# 5. Check page speed
+node scripts/perf.mjs
+
+# 6. Fix everything
+node scripts/fix.mjs --apply
 ```
 
-#### "Score is 0/100 on empty project"
-This is correct behavior. An empty project has no SEO signals. Add content and run `fix.mjs` to scaffold missing files.
+#### Scenario 3: "I'm launching a blog/news site"
 
-#### "Deprecated entrypoint" warning
-Some old script names (like `keyword-check.mjs`) now forward to their canonical versions. This is expected and harmless.
+```bash
+# 1. Check news-specific SEO
+node scripts/news.mjs
+
+# 2. Generate RSS feed
+node scripts/rss.mjs
+
+# 3. Validate schemas
+node scripts/validate-schema.mjs
+
+# 4. Ping search engines
+node scripts/ping-indexnow.mjs
+```
+
+#### Scenario 4: "I'm running an online store"
+
+```bash
+# 1. Check product page SEO
+node scripts/ecom.mjs
+
+# 2. Check for duplicate product descriptions
+node scripts/dup.mjs
+
+# 3. Optimize for snippets (price, availability)
+node scripts/snippet.mjs
+
+# 4. Validate product schemas
+node scripts/validate-schema.mjs
+```
+
+#### Scenario 5: "I have a local business"
+
+```bash
+# 1. Check local business SEO
+node scripts/local.mjs
+
+# 2. Ensure NAP consistency (Name, Address, Phone)
+# 3. Check for LocalBusiness schema
+# 4. Verify geo coordinates
+```
+
+#### Scenario 6: "I want to track my rankings over time"
+
+```bash
+# 1. Export data from Google Search Console
+# 2. Analyze with SPS SEO
+node scripts/gsc.mjs --csv your-export.csv
+
+# 3. Track ranking momentum
+node scripts/rank-tracker.mjs
+```
 
 ### Getting Help
 
-1. Check [PROMPTS.md](PROMPTS.md) for task-specific prompts
-2. Check [guides/](guides/) for deep-dive playbooks
-3. Check [hosts/](hosts/) for agent-specific instructions
-4. Run `node scripts/audit.mjs --help` for command options
+If something doesn't work:
 
----
+1. **Read the error message** - It usually tells you what's wrong
+2. **Check the troubleshooting section** below
+3. **Run with `--help`** - Most commands show help when you add `--help`
+4. **Check file paths** - Make sure you're in the right directory
 
-## Contributing
+### FAQ (Frequently Asked Questions)
 
-Contributions are welcome! Please:
+**Q: Do I need to know coding?**
+A: No! You just need to run commands. The tool does everything for you.
 
-1. Fork the repository
-2. Create a feature branch
-3. Run `npm test` to ensure all 147 assertions pass
-4. Submit a pull request
+**Q: Will this break my website?**
+A: No. The `fix.mjs` command only adds missing files and fixes obvious issues. It won't break existing code.
+
+**Q: How often should I run the audit?**
+A: Run it:
+- Before launching a new website
+- After making major changes
+- Monthly for maintenance
+- Whenever you notice traffic drops
+
+**Q: What if my score is low?**
+A: Don't worry! Run `fix.mjs --apply` to auto-fix common issues, then work through the remaining suggestions.
+
+**Q: Can I undo the fixes?**
+A: Yes. The `fix.mjs` command creates new files (like `robots.txt`) but doesn't delete anything. You can manually edit or delete them.
+
+**Q: Does this work with any website?**
+A: Yes! It works with:
+- Next.js, Astro, Vite, React
+- WordPress, Shopify, Webflow
+- Static HTML sites
+- Any website with files on your computer
+
+**Q: What's the difference between `audit` and `fix`?**
+A: `audit` = diagnosis (tells you what's wrong). `fix` = treatment (fixes the problems).
+
+**Q: What does `--json` mean?**
+A: It outputs results in a machine-readable format. Useful for developers, but not necessary for beginners.
 
 ---
 

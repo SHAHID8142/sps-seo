@@ -1,0 +1,9 @@
+node_modules/
+.DS_Store
+*.log
+coverage/
+dist/
+build/
+.sps/
+sps-seo-config.json
+sps-seo-audit-report.md

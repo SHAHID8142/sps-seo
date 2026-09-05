@@ -1,0 +1,18 @@
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "{{APP_NAME}}",
+  "operatingSystem": "Web, iOS, Android, macOS, Windows",
+  "applicationCategory": "{{APPLICATION_CATEGORY}}",
+  "offers": {
+    "@type": "Offer",
+    "price": "{{PRICE}}",
+    "priceCurrency": "{{CURRENCY}}"
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "{{RATING_VALUE}}",
+    "ratingCount": "{{RATING_COUNT}}"
+  },
+  "featureList": "{{FEATURE_LIST_URL_OR_TEXT}}"
+}

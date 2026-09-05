@@ -1,0 +1,35 @@
+{
+  "name": "sps-seo",
+  "version": "1.0.0",
+  "description": "Comprehensive, framework-agnostic AI agent skill and deterministic audit engine for technical SEO, on-page automation, JSON-LD schema, and AI Search Optimization (GEO/AEO).",
+  "type": "module",
+  "main": "scripts/audit.mjs",
+  "bin": {
+    "sps-seo": "./scripts/audit.mjs"
+  },
+  "scripts": {
+    "audit": "node scripts/audit.mjs",
+    "audit:json": "node scripts/audit.mjs --json",
+    "sync-config": "node scripts/sync-config.mjs",
+    "sitemap": "node scripts/generate-sitemap.mjs",
+    "test": "node tests/test-audit.mjs"
+  },
+  "keywords": [
+    "seo",
+    "ai-seo",
+    "sps",
+    "technical-seo",
+    "schema-org",
+    "json-ld",
+    "aeo",
+    "geo",
+    "llms-txt",
+    "audit",
+    "nextjs",
+    "astro",
+    "vite",
+    "react"
+  ],
+  "author": "Shahid",
+  "license": "MIT"
+}

@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0",
+  "site": {
+    "name": "Acme Software",
+    "url": "https://example.com",
+    "locale": "en_US",
+    "language": "en",
+    "logo": "https://example.com/logo.png",
+    "defaultOgImage": "https://example.com/og-image.jpg",
+    "themeColor": "#0f172a"
+  },
+  "metadata": {
+    "defaultTitle": "Acme | High-Performance Cloud Orchestration",
+    "titleTemplate": "%s | Acme",
+    "defaultDescription": "Streamline your multi-cloud infrastructure with Acme's automated orchestration engine. Real-time telemetry, zero-trust security, and instant deploys.",
+    "keywords": [
+      "cloud orchestration",
+      "infrastructure automation",
+      "kubernetes management",
+      "devops platform"
+    ],
+    "secondaryKeywords": [
+      "automated multi-cloud provisioning",
+      "zero-trust container security",
+      "cloud cost optimization 2026"
+    ]
+  },
+  "author": {
+    "name": "Jane Doe",
+    "role": "Chief Cloud Architect",
+    "url": "https://example.com/team/jane-doe",
+    "social": {
+      "twitter": "@janedoe",
+      "linkedin": "https://linkedin.com/in/janedoe"
+    }
+  },
+  "publisher": {
+    "name": "Acme Inc.",
+    "url": "https://example.com",
+    "logo": "https://example.com/logo.png"
+  },
+  "socialHandles": {
+    "twitter": "@acmecloud",
+    "github": "https://github.com/acme",
+    "linkedin": "https://linkedin.com/company/acme"
+  },
+  "targeting": {
+    "country": "US",
+    "regions": ["US", "EU", "APAC"],
+    "audience": "Enterprise DevOps engineers, Cloud Architects, and CTOs",
+    "competitors": [
+      "https://competitor-a.com",
+      "https://competitor-b.com"
+    ]
+  },
+  "technical": {
+    "enforceCanonical": true,
+    "enforceHeadingHierarchy": true,
+    "enforceImageAlt": true,
+    "generateSitemap": true,
+    "generateRobotsTxt": true,
+    "generateLlmsTxt": true,
+    "openGraph": {
+      "enabled": true,
+      "type": "website"
+    },
+    "twitter": {
+      "enabled": true,
+      "card": "summary_large_image"
+    }
+  },
+  "schemas": [
+    "Organization",
+    "WebSite",
+    "BreadcrumbList"
+  ],
+  "aiSeo": {
+    "enabled": true,
+    "generateLlmsTxt": true,
+    "enableAnswerCapsules": true,
+    "enforcePassageClarity": true
+  },
+  "indexing": {
+    "googleSearchConsoleVerified": false,
+    "sitemapSubmitted": false,
+    "bingWebmasterVerified": false,
+    "lastIndexedCheck": null
+  }
+}

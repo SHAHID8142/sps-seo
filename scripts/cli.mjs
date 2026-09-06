@@ -27,7 +27,8 @@ const SCRIPTS_DIR = path.dirname(fileURLToPath(import.meta.url));
 const COMMANDS = {
   'audit': 'audit.mjs',
   'audit:json': 'audit.mjs --json',
-  'init': 'init.mjs',
+    'init': 'init.mjs',
+  'consult': 'consultant.mjs',
   'fix': 'fix.mjs --apply',
   'fix:dry': 'fix.mjs --dry-run',
   'links': 'internal-links.mjs',
@@ -74,9 +75,11 @@ const HELP = `
 SPS SEO v1.4.0 — Framework-Agnostic Technical SEO Intelligence
 
 Usage: sps-seo <command> [options]
+  (Run 'sps-seo' with no command for interactive consultant mode)
 
 Core:
   init              Interactive config wizard
+  consult           Interactive SEO consultant (asks questions, builds plan)
   audit             Deterministic 100-point SEO audit
   fix               1-click automated remediation (use fix:dry to preview)
 
@@ -136,7 +139,15 @@ Run 'npm run <command>' equivalently in any project with the skill installed.
 
 const cmd = process.argv[2];
 
-if (!cmd || cmd === 'help' || cmd === '--help' || cmd === '-h') {
+// Default to interactive consultant mode if no command given
+if (!cmd) {
+  spawnSync(process.execPath, [path.join(SCRIPTS_DIR, 'consultant.mjs'), ...process.argv.slice(3)], {
+    stdio: 'inherit', cwd: CWD,
+  });
+  process.exit(0);
+}
+
+if (cmd === 'help' || cmd === '--help' || cmd === '-h') {
   console.log(HELP);
   process.exit(0);
 }

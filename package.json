@@ -58,6 +58,7 @@
     "install-skill": "./scripts/install.sh",
     "uninstall-skill": "./scripts/uninstall.sh",
     "update-skill": "./scripts/update.sh",
+    "consult": "node scripts/consultant.mjs",
     "test": "node tests/test-audit.mjs && node tests/test-phase2.mjs",
     "test:core": "node tests/test-audit.mjs",
     "test:phase2": "node tests/test-phase2.mjs"

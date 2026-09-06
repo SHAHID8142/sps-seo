@@ -12,4 +12,16 @@ sps-seo-competitor-matrix.md
 sps-seo-comparison.md
 sps-seo-*.md
 
-robots.txt sitemap.xml llms.txt llms-full.txt og-image.svg seo-preview.html seo-score-badge.svg public/ indexnow-key.txt
+# Generated SEO artifacts (produced by running the tools)
+robots.txt
+sitemap.xml
+llms.txt
+llms-full.txt
+og-image.svg
+seo-preview.html
+seo-score-badge.svg
+seo-result-badge.svg
+indexnow-key.txt
+public/
+rss.xml
+5649bb74a48cb081d3077106ddc92b4f.txt

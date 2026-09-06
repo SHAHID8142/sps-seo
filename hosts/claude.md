@@ -13,10 +13,25 @@
 
 ---
 
-## 2. Command Flow
+---
+## 2. Interactive Consultant Mode (Default Behavior)
 
-```bash
-npm run audit
-npm run fix
+When you run `sps-seo` with no arguments, or `npm run consult`, the skill launches **interactive consultant mode**. This replaces blind auto-fix behavior with a structured conversation:
+
+- Runs a silent audit first
+- Asks numbered questions (reply with 1, 2, 3, etc.)
+- Presents findings in plain English
+- Builds a unified action plan
+- **Waits for your confirmation** before applying any changes
+
+Example:
+\`\`\`
+sps-seo
+\`\`\`
+
+The consultant asks about your project type, SEO goals, target keywords, geographic scope, audience, content preferences, competitors, AI search preferences, and performance priorities. Finally, you choose to run all actions, select specific ones, preview changes, or exit.
+
+---
+## 3. Command Flow (Manual Mode)
 npm run validate-schema
 ```

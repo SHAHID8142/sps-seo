@@ -7,4 +7,4 @@
 ## 1. Operating Rules for Codex
 
 - **Standalone Mode:** In web UI environments without file tools, load instructions from `SYSTEM-PROMPT.md`.
-- **In Sandbox:** Run `node scripts/audit.mjs` directly in the execution container.
+- **In Sandbox:** Run `node scripts/consultant.mjs` (interactive consultant) or `node scripts/audit.mjs` directly in the execution container.

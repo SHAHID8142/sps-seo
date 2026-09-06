@@ -54,6 +54,7 @@ const TOOLS = [
   { name: 'sitemap_validate', description: 'Validate sitemap URLs, hreflang, and index structure', script: 'sitemap-validate.mjs', args: ['--json'] },
   { name: 'rss_generator', description: 'Generate RSS 2.0 feed from content pages', script: 'generate-rss.mjs', args: ['--json'] },
   { name: 'init', description: 'Interactive config wizard — generates sps-seo-config.json', script: 'init.mjs', args: [] },
+  { name: 'consult', description: 'Interactive SEO consultant — asks questions, analyzes project, builds action plan', script: 'consultant.mjs', args: [] },
   { name: 'fix_dry', description: 'Preview automated SEO remediation without applying changes', script: 'fix.mjs', args: ['--dry-run'] },
   { name: 'audit_json', description: 'Run deterministic 100-point SEO audit with JSON output', script: 'audit.mjs', args: ['--json'] },
   { name: 'cannibalization', description: 'Detect keyword cannibalization and duplicate meta tags', script: 'cannibalization.mjs', args: ['--json'] },

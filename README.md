@@ -292,7 +292,23 @@ SPS_SEO_REPO_URL=https://github.com/user/repo.git ./scripts/update.sh
 
 ## Quick Start
 
-### For a New Project
+### Interactive Consultant Mode (Recommended)
+
+```bash
+sps-seo
+# or: npm run consult
+```
+
+This launches an **interactive SEO consultant** that:
+1. Runs a silent audit first (shows your score)
+2. Asks numbered questions about your project (goals, keywords, audience, competitors, etc.)
+3. Presents a unified action plan
+4. **Waits for your confirmation** before applying changes
+5. Saves all answers to `sps-seo-config.json`
+
+Just reply with numbers (1, 2, 3, etc.) at each prompt.
+
+### Manual Mode — New Project
 
 ```bash
 # 1. Configure your project
@@ -317,7 +333,7 @@ node scripts/badge.mjs
 node scripts/ping-indexnow.mjs
 ```
 
-### For an Existing Project
+### Manual Mode — Existing Project
 
 ```bash
 # 1. Run comprehensive audit

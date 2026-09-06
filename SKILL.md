@@ -14,6 +14,27 @@ Read [METHOD-CARD.md](METHOD-CARD.md) before executing any strategy.
 
 ---
 
+## ⚡ Quick Start — Interactive Consultant Mode (Default)
+
+**When you run `sps-seo` (or `npm run consult`) with no arguments, the skill launches Interactive Consultant Mode.** This is now the primary entry point.
+
+The consultant:
+1. Runs a silent audit first (score 0-100)
+2. Asks numbered questions — reply with 1, 2, 3, etc.
+3. Covers: project type, SEO goals, keywords, geo-targeting, audience, content style, competitors, AI search prefs, performance priority
+4. Builds a unified action plan
+5. **Waits for your confirmation** before applying any changes
+6. Saves all collected answers to `sps-seo-config.json`
+
+```bash
+sps-seo                    # launches interactive consultant (default)
+npm run consult            # same
+npm run audit              # manual audit (no questions)
+npm run fix --apply        # manual fix (no questions)
+```
+
+---
+
 ## ⚡ Core Inlined Hard Laws
 
 1. **Zero Hallucination:** Always parse actual project files using `node scripts/audit.mjs` or direct file reads. Never invent non-existent files or directories.
@@ -128,6 +149,7 @@ Guide the user through [guides/phase3-external-seo.md](guides/phase3-external-se
 | Command | Action |
 | :--- | :--- |
 | `npm run init` | Interactive setup wizard for `sps-seo-config.json` |
+| `npm run consult` | Interactive SEO consultant — asks questions, builds action plan |
 | `npm run audit` | Deterministic 100-point AST/DOM audit scanner |
 | `npm run keyword` | Keyword density, prominence & search intent analyzer |
 | `npm run tfidf` | Algorithmic TF*IDF & semantic entity co-occurrence calculator |

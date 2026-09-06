@@ -4,17 +4,29 @@ This document provides copy-paste prompts for every SEO task. Use these with any
 
 ---
 
+## Interactive Consultant Mode (Recommended)
+
+```bash
+sps-seo
+# or: npm run consult
+```
+
+The consultant asks numbered questions and builds a complete action plan. Just reply with numbers at each prompt. No coding knowledge needed.
+
+---
+
 ## Quick Start Prompts
 
 ### New Project (Blank/Empty)
 ```
 Install SPS SEO and run a complete SEO setup on this blank project:
 1. Run: ./scripts/install.sh --global
-2. Run: node scripts/init.mjs (configure brand, domain, keywords)
-3. Run: node scripts/audit.mjs (get baseline score)
-4. Run: node scripts/fix.mjs --apply (auto-fix all issues)
-5. Run: node scripts/audit.mjs (verify score improved)
-6. Generate all assets: sitemap, robots.txt, og-image, schema, badge
+2. Run: node scripts/consultant.mjs (interactive — will ask you questions)
+3. Or: node scripts/init.mjs (manual config)
+4. Run: node scripts/audit.mjs (get baseline score)
+5. Run: node scripts/fix.mjs --apply (auto-fix all issues)
+6. Run: node scripts/audit.mjs (verify score improved)
+7. Generate all assets: sitemap, robots.txt, og-image, schema, badge
 ```
 
 ### Existing Project (SEO Audit & Fix)

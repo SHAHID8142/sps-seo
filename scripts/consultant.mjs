@@ -203,12 +203,12 @@ async function main() {
   const q1 = await askWithOther('Q1', 'What type of project is this?',
     ['Business / Corporate Website', 'E-commerce Store', 'Blog / Content Site', 'Portfolio / Agency', 'SaaS / Web App', 'News / Publication'],
     'Describe your project type');
-  answers.projectType = q1.choice === 'other' ? q1.value : q1.choice;
+  answers.projectType = q1.choice === 'other' ? q1.value : q1.value;
 
   const q2 = await askWithOther('Q2', 'What is your PRIMARY SEO goal?',
     ['Increase organic traffic', 'Rank for specific keywords', 'Local business visibility', 'E-commerce sales', 'Brand awareness', 'Technical SEO compliance', 'Not sure — help me decide'],
     'Describe your goal');
-  answers.primaryGoal = q2.choice === 'other' ? q2.value : q2.choice;
+  answers.primaryGoal = q2.choice === 'other' ? q2.value : q2.value;
 
     answers.siteUrl = await askText('Q3', 'What is your production domain URL?', config?.site?.url || 'https://example.com');
   if (!/^https?:\/\//.test(answers.siteUrl)) answers.siteUrl = 'https://' + answers.siteUrl;
@@ -247,12 +247,12 @@ async function main() {
   const q6 = await askWithOther('Q6', 'Who is your target audience?',
     ['General consumers', 'Professional B2B buyers', 'Technical professionals', 'Students & learners', 'Industry experts'],
     'Describe your audience');
-  answers.audienceType = q6.choice === 'other' ? q6.value : q6.choice;
+  answers.audienceType = q6.choice === 'other' ? q6.value : q6.value;
 
   const q7 = await askWithOther('Q7', 'What content style performs best with your audience?',
     ['Short & scannable', 'Balanced (medium depth)', 'Long-form comprehensive', 'Data-driven / tables', 'Storytelling / narrative'],
     'Describe preferred content style');
-  answers.contentStyle = q7.choice === 'other' ? q7.value : q7.choice;
+  answers.contentStyle = q7.choice === 'other' ? q7.value : q7.value;
 
   const q8 = await askWithOther('Q8', 'Do you have existing content?',
     ['No — starting from scratch', 'Yes — minimal (<5 pages)', 'Yes — moderate (5-50 pages)', 'Yes — large (>50 pages)'],
@@ -394,6 +394,69 @@ async function main() {
     info(`Session saved to ${path.relative(CWD, sessionPath)}`);
   } catch {
     warn('Could not save session file (optional).');
+  }
+
+  // ─── Write collected answers to sps-seo-config.json ────────────────────────
+  subheader('Saving Configuration');
+  try {
+    const newConfig = {
+      ...(config || {}),
+      version: '1.4.0',
+      site: {
+        ...(config?.site || {}),
+        url: answers.siteUrl,
+        name: answers.projectType,
+      },
+      metadata: {
+        ...(config?.metadata || {}),
+        keywords: answers.primaryKeywords,
+        secondaryKeywords: config?.metadata?.secondaryKeywords || [],
+      },
+      author: {
+        ...(config?.author || {}),
+        name: config?.author?.name || '',
+        role: config?.author?.role || '',
+      },
+      targeting: {
+        ...(config?.targeting || {}),
+        competitors: answers.competitors,
+        geoTarget: answers.geoTarget,
+        ...(answers.geoTargetCountry ? { geoTargetCountry: answers.geoTargetCountry } : {}),
+        ...(answers.multiregional ? { multiregional: true, regions: answers.regions } : {}),
+        audience: answers.audienceType,
+        contentStyle: answers.contentStyle,
+        contentVolume: answers.contentVolume,
+      },
+      aiSearch: {
+        enabled: answers.aiSearch !== '2',
+        contentOnly: answers.aiSearch === '3',
+      },
+      indexing: {
+        ...(config?.indexing || {}),
+        mode: answers.indexingPreference === '1' ? 'full' : answers.indexingPreference === '2' ? 'none' : 'selective',
+      },
+      performance: {
+        priority: answers.perfPriority,
+        label: answers.perfPriority === '1' ? 'Critical' : answers.perfPriority === '2' ? 'Important' : answers.perfPriority === '3' ? 'Nice to have' : 'Low',
+      },
+      consultation: {
+        lastRun: new Date().toISOString(),
+        projectType: answers.projectType,
+        primaryGoal: answers.primaryGoal,
+        contentGap: answers.contentGap,
+      },
+    };
+
+    fs.writeFileSync(configPath, JSON.stringify(newConfig, null, 2), 'utf8');
+    success(`Configuration saved to sps-seo-config.json`);
+
+    // Sync to .sps/ if it exists
+    if (fs.existsSync(path.join(CWD, '.sps'))) {
+      fs.writeFileSync(path.join(CWD, '.sps', 'seo.json'), JSON.stringify(newConfig, null, 2), 'utf8');
+      info('Synced to .sps/seo.json');
+    }
+  } catch (e) {
+    warn(`Could not save config: ${e.message}`);
   }
 
   // ─── Execute ───────────────────────────────────────────────────────────────

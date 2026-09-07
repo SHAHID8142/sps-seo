@@ -2,16 +2,20 @@
 
 /**
  * SPS SEO — Server Access-Log Analyzer
- * Version: 1.4.0
+ * Version: 1.5.0
  *
  * Zero-dependency Nginx/Common/combined-format access-log analyzer for
- * crawl-budget & indexing health:
+ * crawl-budget, indexing health & attack signals:
  *  1. Status-code distribution (4xx/5xx hotspots)
  *  2. Per-URL request frequency — top crawled paths + unexpected robot hits
  *  3. "Crawl waste" heuristics: search-engine bot hits on query params,
  *     session IDs, printer pages, /wp-admin, etc.
  *  4. Unique URL cardinality vs total requests (SEO crawl budget value)
  *  5. Per-bot breakdown (Googlebot/Bingbot/ClaudeBot/OAI-SearchBot/etc.)
+ *  6. SECURITY signals: brute-force bursts (401/403 per IP), path-traversal
+ *     probes (../, /etc/passwd, %2e%2e), sensitive-file probes (/.env,
+ *     /.git, /.aws), injection attempts (SQLi/XSS strings in query), and
+ *     per-IP request-rate outliers
  *
  * Usage:
  *   npm run logs -- --file access.log [--bot-limit 20] [--json]
@@ -36,6 +40,16 @@ const CRAWL_WASTE_PATTERNS = [
   { re: /\/api\//i, label: 'API endpoints' },
   { re: /\/tag\/|\/category\/(?:page\/\d+)?[^/]*\/?$/i, label: 'thin archive/tag' },
   { re: /\/page\/?\d+\//i, label: 'paginated archives' }
+];
+
+// Attack-signal patterns (security dimension)
+const ATTACK_PATTERNS = [
+  { re: /\.\.[\/\\]|%2e%2e(%2f|%5c|\/)|\/etc\/passwd|\/etc\/shadow|win\.ini|boot\.ini/i, label: 'path traversal' },
+  { re: /^\/(\/)?\.(env|git|aws|ssh|htaccess|htpasswd|npmrc|svn|hg|DS_Store)|^\/(backup|dump|db)\.(sql|zip|tar|gz)/i, label: 'sensitive file probe' },
+  { re: /(\%27|'|\%22|")(\s|,|\d)*(\bunion\b|\bselect\b|\binsert\b|\bdrop\b|--|\/\*)|\bor\b\s+1\s*=\s*1|;--|\bexec\b.*\bxp_/i, label: 'SQL injection attempt' },
+  { re: /<script|javascript:|\bonerror\s*=|\bonload\s*=|\balert\s*\(|%3cscript/i, label: 'XSS attempt' },
+  { re: /\/wp-login\.php|\/xmlrpc\.php|\/administrator\/index\.php|\/login\.php/i, label: 'auth-endpoint probe' },
+  { re: /\bphpunit\b|\b\.well-known\/security\b|\/cgi-bin\/|\bactuator\b|\/graphql\b(?!.*(introspection-off))/i, label: 'debug/service probe' }
 ];
 
 function parseLine(line) {
@@ -95,6 +109,7 @@ function analyzeLog(filePath, options = {}) {
   const pathCounts = {};
   const botCounts = {};
   const wasteHits = [];
+  const securitySignals = { attacks: [], authFailuresByIp: {}, requestsByIp: {} };
   let total = parsed.length;
   let uniquePaths = 0;
 
@@ -107,6 +122,21 @@ function analyzeLog(filePath, options = {}) {
     const bot = classifyBot(r.userAgent);
     botCounts[bot] = (botCounts[bot] || 0) + 1;
 
+    // ── Security signal collection ──
+    // Per-IP request volume (rate-anomaly baseline)
+    securitySignals.requestsByIp[r.ip] = (securitySignals.requestsByIp[r.ip] || 0) + 1;
+    // Auth-failure bursts → brute force candidates
+    if (r.status === 401 || r.status === 403) {
+      securitySignals.authFailuresByIp[r.ip] = (securitySignals.authFailuresByIp[r.ip] || 0) + 1;
+    }
+    // Explicit attack patterns in the request line
+    for (const p of ATTACK_PATTERNS) {
+      if (p.re.test(r.path)) {
+        securitySignals.attacks.push({ ip: r.ip, path: r.path.slice(0, 120), label: p.label, status: r.status });
+        break; // classify each request once
+      }
+    }
+
     for (const p of CRAWL_WASTE_PATTERNS) {
       if (p.re.test(r.path)) {
         wasteHits.push({ path: r.path, label: p.label, bot, status: r.status });
@@ -114,6 +144,23 @@ function analyzeLog(filePath, options = {}) {
       }
     }
   }
+
+  // Derive security verdicts
+  const totalParsed = parsed.length || 1;
+  const bruteForceIps = Object.entries(securitySignals.authFailuresByIp)
+    .filter(([, n]) => n >= 10)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([ip, failures]) => ({ ip, failures }));
+  const rateOutlierIps = Object.entries(securitySignals.requestsByIp)
+    .filter(([, n]) => n >= Math.max(200, totalParsed * 0.05))
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([ip, count]) => ({ ip, count }));
+  const attackSummary = securitySignals.attacks.reduce((acc, a) => {
+    acc[a.label] = (acc[a.label] || 0) + 1;
+    return acc;
+  }, {});
 
   const notFound = Object.keys(statusCounts).filter(s => s === '404').reduce((s, k) => s + statusCounts[k], 0);
   const serverErrors = Object.keys(statusCounts).filter(s => parseInt(s, 10) >= 500).reduce((s, k) => s + statusCounts[k], 0);
@@ -136,7 +183,14 @@ function analyzeLog(filePath, options = {}) {
     topPaths,
     botBreakdown: topBots,
     botSharePct: total ? Math.round((totalBots / total) * 100) : 0,
-    crawlWaste: { total: wasteTotal, labelCounts: wasteHits.reduce((acc, h) => { acc[h.label] = (acc[h.label] || 0) + 1; return acc; }, {}), samples: wasteHits.slice(0, 20) }
+    crawlWaste: { total: wasteTotal, labelCounts: wasteHits.reduce((acc, h) => { acc[h.label] = (acc[h.label] || 0) + 1; return acc; }, {}), samples: wasteHits.slice(0, 20) },
+    security: {
+      attackAttempts: securitySignals.attacks.length,
+      attackSummary,
+      attackSamples: securitySignals.attacks.slice(0, 15),
+      bruteForceSuspects: bruteForceIps,
+      rateOutliers: rateOutlierIps
+    }
   };
 }
 
@@ -175,6 +229,31 @@ function runLogAnalyzer(options = {}) {
     for (const [label, count] of Object.entries(report.crawlWaste.labelCounts)) {
       console.log(`  ${label}: ${count}`);
     }
+  }
+  // ── Security signals ──
+  if (report.security.attackAttempts > 0) {
+    console.log(`\n🚨 Attack signals: ${report.security.attackAttempts} suspicious request(s)`);
+    for (const [label, count] of Object.entries(report.security.attackSummary)) {
+      console.log(`  ${label}: ${count}`);
+    }
+    for (const s of report.security.attackSamples.slice(0, 5)) {
+      console.log(`  └─ ${s.ip} → ${s.path} [${s.status}]`);
+    }
+  }
+  if (report.security.bruteForceSuspects.length > 0) {
+    console.log(`\n🚨 Brute-force suspects (≥10 auth failures):`);
+    for (const s of report.security.bruteForceSuspects) {
+      console.log(`  ${s.ip}: ${s.failures} failed auth requests → block at WAF/firewall`);
+    }
+  }
+  if (report.security.rateOutliers.length > 0) {
+    console.log(`\n⚠️  Rate outliers (≥5% of traffic or 200+ requests from one IP):`);
+    for (const s of report.security.rateOutliers) {
+      console.log(`  ${s.ip}: ${s.count} requests`);
+    }
+  }
+  if (report.security.attackAttempts === 0 && report.security.bruteForceSuspects.length === 0 && report.security.rateOutliers.length === 0) {
+    console.log('\n✓ No attack signals, brute-force bursts, or rate anomalies detected.');
   }
   console.log('\nActions: fix top 404 paths, block crawl-waste patterns via robots.txt, verify indexable templates in `npm run redirect`.\n');
   return report;

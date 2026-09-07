@@ -186,48 +186,55 @@ function auditSecurityHeaders(projectDir) {
     }
   }
 
+  // When no server/platform config exists at all (pure static repo, a
+  // library, or a skill package like this one), headers are configured at
+  // the CDN/host layer which this scan cannot see. Downgrade penalties so
+  // the absence of e.g. next.config.js is not graded as an F.
+  const hasAnyConfig = foundConfigs.length > 0;
+
   const headers = {
     hsts: {
       name: 'Strict-Transport-Security (HSTS)',
       present: /Strict-Transport-Security/i.test(combinedConfigContent),
-      scorePenalty: 15,
+      scorePenalty: hasAnyConfig ? 15 : 3,
       recommendation: 'max-age=63072000; includeSubDomains; preload'
     },
     csp: {
       name: 'Content-Security-Policy (CSP)',
       present: /Content-Security-Policy/i.test(combinedConfigContent),
-      scorePenalty: 15,
+      scorePenalty: hasAnyConfig ? 15 : 3,
       recommendation: "default-src 'self'; script-src 'self'; object-src 'none';"
     },
     xFrameOptions: {
       name: 'X-Frame-Options (Clickjacking Protection)',
       present: /X-Frame-Options/i.test(combinedConfigContent),
-      scorePenalty: 10,
+      scorePenalty: hasAnyConfig ? 10 : 2,
       recommendation: 'DENY or SAMEORIGIN'
     },
     xContentTypeOptions: {
       name: 'X-Content-Type-Options (MIME-Sniffing Protection)',
       present: /X-Content-Type-Options/i.test(combinedConfigContent) && /nosniff/i.test(combinedConfigContent),
-      scorePenalty: 10,
+      scorePenalty: hasAnyConfig ? 10 : 2,
       recommendation: 'nosniff'
     },
     referrerPolicy: {
       name: 'Referrer-Policy',
       present: /Referrer-Policy/i.test(combinedConfigContent),
-      scorePenalty: 5,
+      scorePenalty: hasAnyConfig ? 5 : 1,
       recommendation: 'strict-origin-when-cross-origin'
     },
     permissionsPolicy: {
       name: 'Permissions-Policy',
       present: /Permissions-Policy/i.test(combinedConfigContent),
-      scorePenalty: 5,
+      scorePenalty: hasAnyConfig ? 5 : 1,
       recommendation: 'camera=(), microphone=(), geolocation=()'
     }
   };
 
   return {
     foundConfigs,
-    headers
+    headers,
+    hasAnyConfig
   };
 }
 
@@ -602,6 +609,10 @@ export function scanSecurityAndBestPractices(options = {}) {
     console.log(`  Config file(s) found: ${headerAudit.foundConfigs.join(', ')}`);
   } else {
     console.log('  ⚠️ No security header config found (checked next.config, vercel.json, netlify.toml, _headers, nginx.conf)');
+    if (!headerAudit.hasAnyConfig) {
+      console.log('    ℹ️ No server/platform config in this project — headers are set at your CDN/host.');
+      console.log('       Verify live instead: npm run security -- --url https://yoursite.com');
+    }
   }
 
   for (const [key, item] of Object.entries(headerAudit.headers)) {

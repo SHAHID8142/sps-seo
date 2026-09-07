@@ -220,6 +220,9 @@ export async function runSecurityAudit(options = {}) {
     path.resolve(fileURLToPath(import.meta.url)),
     path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'security-check.mjs'),
     path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'secrets-scan.mjs'),
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'bundle-audit.mjs'),
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'a11y.mjs'),
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'lighthouse.mjs'),
   ]);
 
   const sinksFound = [];
@@ -331,6 +334,8 @@ export async function runSecurityAudit(options = {}) {
       const full = path.join(dir, e.name);
       if (e.isDirectory()) walkMixed(full);
       else if (e.isFile() && SCAN_EXTS.has(path.extname(e.name).toLowerCase())) {
+        // Scanner sources contain literal "http://" inside help/doc strings
+        if (SELF_FILES.has(path.resolve(full))) continue;
         let content;
         try { content = fs.readFileSync(full, 'utf8'); } catch { continue; }
         // Look for http:// in src/href/import/url() contexts (avoid code comments).
@@ -342,8 +347,7 @@ export async function runSecurityAudit(options = {}) {
           .filter(u => !/w3\.org|sitemaps\.org|schemas\.(?:sitemaps\.org|openxmlformats\.org)|schema\.org|localhost|127\.0\.0\.1|purl\.org|xmlns/i.test(u));
         if (httpOnly.length > 0) {
           mixedContent.push({ file: path.relative(projectDir, full), urls: httpOnly });
-        }
-      }
+        }      }
     }
   }
   walkMixed(projectDir);
@@ -670,6 +674,16 @@ function applyHeaderFindings(report, findings, penalize) {
 
   // ── CSP quality checks ──────────────────────────────────────────
   const csp = report.headers['content-security-policy'];
+  // Report-only mode: a CSP policy exists but is not enforced yet
+  const cspRo = report.headers['content-security-policy-report-only'];
+  if (!csp && cspRo) {
+    findings.push({
+      severity: 'low', category: 'header', file: report.url,
+      msg: 'CSP is in Report-Only mode — violations are logged but nothing is blocked yet.',
+      fix: 'Review reports, then switch to the enforcing Content-Security-Policy header.'
+    });
+    penalize(1, 'low');
+  }
   if (csp) {
     if (/unsafe-inline/i.test(csp) && !/nonce-/i.test(csp)) {
       findings.push({

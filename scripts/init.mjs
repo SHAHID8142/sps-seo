@@ -20,6 +20,14 @@ async function main() {
   console.log('\n✨ Welcome to the SPS SEO Setup Wizard!\n');
 
   const isNonInteractive = process.argv.includes('--yes') || process.argv.includes('-y');
+  // No TTY (CI, piped stdin) + no explicit --yes would hang forever on the
+  // first rl.question. Auto-degrade to template mode with a clear notice.
+  const noTty = !process.stdin.isTTY;
+  if (!isNonInteractive && noTty) {
+    console.log('ℹ No TTY detected (CI / piped input) — generating default configuration.');
+    console.log('  Run interactively in a terminal, or use `npm run init -- --yes` to skip this notice.');
+  }
+
   let config = {};
 
   if (fs.existsSync(targetConfigPath)) {
@@ -31,14 +39,27 @@ async function main() {
     }
   }
 
-  if (isNonInteractive) {
+  if (isNonInteractive || noTty) {
     console.log('Running in non-interactive mode. Generating default configuration...');
     const examplePath = path.join(CWD, 'sps-seo-config.example.json');
     if (fs.existsSync(examplePath)) {
       fs.copyFileSync(examplePath, targetConfigPath);
       console.log('✓ Initialized sps-seo-config.json from template.');
-      return;
+    } else {
+      // Skill installed as a CLI (no example file in the target project):
+      // write a minimal usable default so the pipeline still runs.
+      fs.writeFileSync(targetConfigPath, JSON.stringify({
+        $schema: 'https://json-schema.org/draft/2020-12/schema',
+        version: '1.0.0',
+        site: { name: 'My Website', url: 'https://example.com', locale: 'en_US', language: 'en' },
+        metadata: {
+          defaultTitle: 'My Website',
+          defaultDescription: 'Replace with a 140-160 character meta description of your site.'
+        }
+      }, null, 2));
+      console.log('✓ Initialized sps-seo-config.json with defaults (edit sps-seo-config.json to customize).');
     }
+    return;
   }
 
   const rl = readline.createInterface({ input, output });

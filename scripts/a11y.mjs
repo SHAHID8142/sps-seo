@@ -2,19 +2,19 @@
 
 /**
  * SPS SEO Accessibility (WCAG 2.2 AA) Static Audit
- * Version: 1.2.0
+ * Version: 1.3.0
  *
- * Static checks across templates and components:
+ * Static checks across templates and components (HTML-emitting files only):
  *  - <html lang> attribute present
  *  - Skip navigation link present
- *  - <main>, <header>, <nav>, <footer> landmarks
+ *  - <main> landmark (header/nav/footer checked via landmark bonus)
  *  - Interactive elements (button/a/input/select/textarea) have accessible names
  *  - <img> alt coverage (deeper than audit.mjs — also flags decorative role)
  *  - Heading order (no skipped levels; one <h1>)
- *  - Form input → label association
+ *  - Form input/textarea/select → label association
  *  - ARIA roles are valid; aria-hidden doesn't hide focusable elements
  *  - Tabindex positive values (anti-pattern)
- *  - Empty links / buttons
+ *  - Empty links and buttons (no accessible name at all)
  *  - <a target="_blank"> without rel="noopener noreferrer" (also in audit.mjs; mirrored for visibility)
  *  - Color-only contrast hints are out of scope for static; documented as gap.
  *
@@ -34,7 +34,9 @@ const IGNORE_DIRS = new Set([
   '.sps', '.agents', 'public'
 ]);
 
-const TEMPLATE_EXTS = new Set(['.html', '.htm', '.astro', '.tsx', '.jsx', '.vue', '.svelte', '.md', '.mdx']);
+// HTML-emitting templates only. Markdown/mdx are prose documents — auditing
+// them inflated noMainLandmark/noSkipLink/h1Issues with pure noise.
+const TEMPLATE_EXTS = new Set(['.html', '.htm', '.astro', '.tsx', '.jsx', '.vue', '.svelte']);
 
 const VALID_ARIA_ROLES = new Set([
   'alert', 'alertdialog', 'application', 'article', 'banner', 'button',
@@ -66,6 +68,9 @@ export function runA11yAudit(options = {}) {
     htmlLangMissing: 0,
     noSkipLink: 0,
     noMainLandmark: 0,
+    noHeaderLandmark: 0,
+    noNavLandmark: 0,
+    noFooterLandmark: 0,
     unlabeledButtons: 0,
     unlabeledLinks: 0,
     unlabeledInputs: 0,
@@ -119,6 +124,22 @@ export function runA11yAudit(options = {}) {
       sc: '1.3.1 Info and Relationships',
       msg: `<main> landmark missing on ${stats.noMainLandmark} file(s).`,
       fix: 'Wrap primary content in <main id="main">.'
+    });
+  }
+  if (stats.emptyLinks > 0) {
+    findings.unshift({
+      severity: 'medium',
+      sc: '2.4.4 Link Purpose (In Context)',
+      msg: `${stats.emptyLinks} empty link(s) (no text, no aria-label, no alt) — invisible to screen readers and keyboard users.`,
+      fix: 'Give the link text, aria-label, or an alt on its image; if decorative, remove it.'
+    });
+  }
+  if (stats.noHeaderLandmark > 0 || stats.noNavLandmark > 0) {
+    findings.unshift({
+      severity: 'low',
+      sc: '1.3.1 Info and Relationships',
+      msg: `Landmark coverage: <header> missing on ${stats.noHeaderLandmark} file(s), <nav> missing on ${stats.noNavLandmark} file(s).`,
+      fix: 'Use <header>, <nav>, <footer> landmarks so screen-reader users can navigate by region.'
     });
   }
   if (stats.unlabeledButtons > 0) {
@@ -253,10 +274,29 @@ function auditFile(fullPath, findings, stats, penalize) {
     // no penalty; informational
   }
 
-  // 3. <main> landmark
+  // 3. Landmarks: <main> required; <header>/<nav>/<footer> tracked as stats
   if (!/<main\b/i.test(stripped)) {
     stats.noMainLandmark++;
     penalize(8, 'high');
+  }
+  if (!/<header\b/i.test(stripped)) stats.noHeaderLandmark++;
+  if (!/<nav\b/i.test(stripped)) stats.noNavLandmark++;
+  if (!/<footer\b/i.test(stripped)) stats.noFooterLandmark++;
+
+  // 3b. Empty links: <a> with no accessible name whatsoever
+  const anchorRegex = /<a\b([^>]*)>([\s\S]*?)<\/a>/gi;
+  let anchorMatch;
+  while ((anchorMatch = anchorRegex.exec(stripped)) !== null) {
+    const attrs = anchorMatch[1];
+    const body = anchorMatch[2].replace(/<[^>]+>/g, '').trim();
+    const hasAriaLabel = /aria-label\s*=\s*["'][^"']+["']/i.test(attrs);
+    const hasAriaLabelledby = /aria-labelledby\s*=\s*["'][^"']+["']/i.test(attrs);
+    const hasTitle = /\btitle\s*=\s*["'][^"']+["']/i.test(attrs);
+    const isImageLink = /<img\b[^>]*\balt\s*=\s*["'][^"']*["']/i.test(anchorMatch[2]);
+    if (!body && !hasAriaLabel && !hasAriaLabelledby && !hasTitle && !isImageLink) {
+      stats.emptyLinks++;
+      penalize(2, 'medium');
+    }
   }
 
   // 4. Buttons without accessible name
@@ -305,6 +345,29 @@ function auditFile(fullPath, findings, stats, penalize) {
         stats.inputsWithoutLabel++;
         penalize(3, 'high');
       }
+    }
+  }
+
+  // 5b. <textarea> and <select> label association (SC 1.3.1 / 4.1.2)
+  const fieldRegex = /<(textarea|select)\b([^>]*?)(?:\/?>|>)/gi;
+  while ((m = fieldRegex.exec(stripped)) !== null) {
+    const attrs = m[2];
+    const id = /\bid\s*=\s*["']([^"']+)["']/i.exec(attrs);
+    const hasAriaLabel = /aria-label\s*=\s*["'][^"']+["']/i.test(attrs);
+    const hasAriaLabelledby = /aria-labelledby\s*=\s*["'][^"']+["']/i.test(attrs);
+    const hasTitle = /\btitle\s*=\s*["'][^"']+["']/i.test(attrs);
+    if (hasAriaLabel || hasAriaLabelledby || hasTitle) continue;
+    if (id) {
+      const labelFor = new RegExp(`<label\\b[^>]*\\bfor\\s*=\\s*["']${id[1]}["']`, 'i');
+      if (!labelFor.test(stripped)) {
+        stats.unlabeledInputs++;
+        stats.inputsWithoutLabel++;
+        penalize(3, 'high');
+      }
+    } else {
+      stats.unlabeledInputs++;
+      stats.inputsWithoutLabel++;
+      penalize(3, 'high');
     }
   }
 

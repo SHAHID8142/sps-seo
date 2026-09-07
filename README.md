@@ -628,6 +628,7 @@ node scripts/security.mjs
 | `badge` | Creates a score badge for your README |
 | `i18n` | Checks multi-language hreflang tags |
 | `sync-config` | Syncs config between files |
+| `hook` | Installs a git pre-commit SEO quality gate |
 ### Scenario-Based Guides
 
 #### Scenario 1: "I just built a website and want to make sure it's SEO-ready"

@@ -334,6 +334,7 @@ Guide the user through [guides/phase3-external-seo.md](guides/phase3-external-se
 | `npm run badge` | Compiles live SVG SEO score badge for README.md |
 | `npm run ping-indexnow` | Instantly pings IndexNow API with updated routes |
 | `npm run sync-config` | Syncs `sps-seo-config.json` <-> `.sps/seo.json` |
+| `npm run hook` | Installs a git pre-commit hook that blocks commits scoring below the SEO gate |
 | `npm test` | Runs the full automated test suite (core + vertical expansion) |
 | `npm run test:phase2` | Runs the vertical/expansion test suite only |
 

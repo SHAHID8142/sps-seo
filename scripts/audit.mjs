@@ -221,11 +221,13 @@ function analyzeContent(filePath, content) {
   let title = null;
   let description = null;
   let canonical = null;
+  let hasFrontmatter = false;
 
   if (isMarkdown) {
     // Markdown frontmatter (YAML) is the canonical source for md/mdx pages
     const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(content);
     if (fm) {
+      hasFrontmatter = true;
       const t = /^title:\s*["']?(.+?)["']?\s*$/m.exec(fm[1]);
       const d = /^description:\s*["']?(.+?)["']?\s*$/m.exec(fm[1]);
       if (t) title = t[1].trim();
@@ -235,8 +237,7 @@ function analyzeContent(filePath, content) {
       const h1 = headings.find(h => h.level === 1);
       if (h1) title = h1.text;
     }
-  } else {
-    const titleMatch = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(content) ||
+  } else {    const titleMatch = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(content) ||
                        new RegExp(`${METADATA_CONTEXT}[\\s\\S]{0,800}?title:\\s*["'\`]([^"'\`]+)["'\`]`, 'i').exec(content);
     title = titleMatch ? titleMatch[1].trim() : null;
 
@@ -281,25 +282,51 @@ function analyzeContent(filePath, content) {
     }
   }
 
+  // Mobile viewport readiness (Next.js App Router uses `export const viewport`)
+  const hasViewport = /<meta[^>]+name=["']viewport["']/i.test(content) ||
+                      /export\s+const\s+viewport\s*(?::\s*Viewport)?\s*=/i.test(content);
+
+  // Language declaration (SC 3.1.1 + hreflang baseline)
+  const hasHtmlLang = /<html\b[^>]*\slang=["'][^"']+["']/i.test(content);
+
+  // Canonical multiplicity (multiple canonical tags on one page is a defect)
+  const canonicalCount = (content.match(/<link\s+rel=["']canonical["']/gi) || []).length;
+
   // Semantic landmarks
   const hasMain = /<main\b/i.test(content);
   const hasHeader = /<header\b/i.test(content);
   const hasFooter = /<footer\b/i.test(content);
   const hasNav = /<nav\b/i.test(content);
 
+  // Visible word count for thin-content detection (strip script/style/tags)
+  const bodyText = content
+    .replace(/<script\b[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style\b[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const wordCount = isMarkdown
+    ? proseContent.split(/\s+/).filter(Boolean).length
+    : (bodyText ? bodyText.split(' ').length : 0);
+
   return {
     file: relPath,
     ext,
     hasNextMetadata,
+    hasFrontmatter,
     title,
     description,
     canonical,
+    canonicalCount,
     og: { title: ogTitle, desc: ogDesc, image: ogImage, url: ogUrl },
     twitter: { card: twitterCard },
     hasJsonLd,
     hasNoindex,
     hasNofollow,
     insecureLinksCount,
+    hasViewport,
+    hasHtmlLang,
+    wordCount,
     headings: {
       total: headings.length,
       h1Count,
@@ -319,6 +346,24 @@ function analyzeContent(filePath, content) {
       hasNav
     }
   };
+}
+
+// Framework adapter mapping: audit report + fix pipeline reference
+// adapters/<type>.md; framework types without a dedicated file must route
+// to the universal fallback instead of a dead link.
+const ADAPTER_MAP = {
+  nextjs: 'nextjs-app',
+  astro: 'astro',
+  nuxt: 'universal-fallback',
+  sveltekit: 'universal-fallback',
+  vite: 'vite-react',
+  'static-html': 'static-html',
+  unknown: 'universal-fallback'
+};
+
+// 3b. Visible word counter (thin-content signal)
+function countVisibleWords(analysis, content) {
+  return analysis.wordCount || 0;
 }
 
 // 4. Main Audit Controller
@@ -401,6 +446,23 @@ export async function runAudit(options = {}) {
   let totalEmptyAlt = 0;
   let pagesWithH1 = 0;
 
+  // Metadata quality collectors
+  const titleLengthViolations = [];
+  const descLengthViolations = [];
+  const titleMap = new Map();   // title -> [files]
+  const descMap = new Map();    // description -> [files]
+  const multiCanonicalPages = [];
+  let eligibleMetaPages = 0;
+  let pagesWithTitle = 0;
+  let pagesWithDesc = 0;
+  let pagesWithoutViewport = 0;
+  let pagesWithoutLang = 0;
+  const thinContentPages = [];
+  // Files eligible for per-page metadata coverage. tsx/jsx are excluded:
+  // Next.js metadata inheritance from layouts/generateMetadata cannot be
+  // resolved statically, so per-file coverage there would false-penalize.
+  const META_ELIGIBLE_EXTS = new Set(['.html', '.htm', '.astro', '.vue', '.svelte', '.md', '.mdx']);
+
   for (const a of analyses) {
     if (a.title && !aggregatedTitle) aggregatedTitle = a.title;
     if (a.description && !aggregatedDesc) aggregatedDesc = a.description;
@@ -418,10 +480,53 @@ export async function runAudit(options = {}) {
     totalImages += a.images.total;
     totalMissingAlt += a.images.missingAlt;
     totalEmptyAlt += a.images.emptyAlt;
+
+    // --- Metadata quality collection (templates + frontmatter-markdown only)
+    const isMetaEligible = META_ELIGIBLE_EXTS.has(a.ext) && (a.ext !== '.md' && a.ext !== '.mdx' || a.hasFrontmatter);
+    if (isMetaEligible) {
+      eligibleMetaPages++;
+      if (a.title) {
+        pagesWithTitle++;
+        const list = titleMap.get(a.title) || [];
+        list.push(a.file);
+        titleMap.set(a.title, list);
+        if (a.title.length < 30 || a.title.length > 60) {
+          titleLengthViolations.push({ file: a.file, length: a.title.length });
+        }
+      }
+      if (a.description) {
+        pagesWithDesc++;
+        const list = descMap.get(a.description) || [];
+        list.push(a.file);
+        descMap.set(a.description, list);
+        if (a.description.length < 70 || a.description.length > 160) {
+          descLengthViolations.push({ file: a.file, length: a.description.length });
+        }
+      }
+    }
+
+    // Canonical multiplicity (any file type that emits <link> tags)
+    if (a.canonicalCount > 1) multiCanonicalPages.push({ file: a.file, count: a.canonicalCount });
+
+    // Mobile / language readiness for HTML documents
+    const isHtmlDoc = ['.html', '.htm'].includes(a.ext);
+    if (isHtmlDoc) {
+      if (!a.hasViewport) pagesWithoutViewport++;
+      if (!a.hasHtmlLang) pagesWithoutLang++;
+    }
+
+    // Thin content (static HTML pages & frontmatter markdown only)
+    if (isHtmlDoc || (a.hasFrontmatter && (a.ext === '.md' || a.ext === '.mdx'))) {
+      const words = countVisibleWords(a);
+      if (words > 0 && words < 120) thinContentPages.push({ file: a.file, words });
+    }
   }
 
   // If nextjs app router has metadata in layout or page
   const hasMetadataObject = analyses.some(a => a.hasNextMetadata);
+
+  const duplicateTitles = [...titleMap.entries()].filter(([, files]) => files.length > 1);
+  const duplicateDescs = [...descMap.entries()].filter(([, files]) => files.length > 1);
 
   // -------------------------------------------------------------
   // DETERMINISTIC 100-POINT SCORING BREAKDOWN
@@ -438,27 +543,48 @@ export async function runAudit(options = {}) {
   if (configExists) cat1Score += 4;
 
   // Category 2: Meta Tags & Social Previews (25 pts)
-  //   - Title tag present & optimal length (8 pts)
-  //   - Meta description present & optimal length (8 pts)
+  //   - Title coverage & quality (8 pts): 5 coverage + 3 quality
+  //   - Description coverage & quality (8 pts): 5 coverage + 3 quality
   //   - Canonical URL present (4 pts)
   //   - Open Graph tags present (3 pts)
   //   - Twitter Card tag present (2 pts)
+  //
+  // Coverage is computed over metadata-eligible pages (html/astro/vue/svelte
+  // templates and frontmatter markdown). For pure Next.js metadata-object
+  // projects (no inline tags), a 0.6 coverage floor applies ONLY when a real
+  // title was actually extracted — an empty `metadata = {}` no longer
+  // earns the full 25/25 it previously did.
+  let titleCoverage = 0;
+  let descCoverage = 0;
+  if (eligibleMetaPages > 0) {
+    titleCoverage = pagesWithTitle / eligibleMetaPages;
+    descCoverage = pagesWithDesc / eligibleMetaPages;
+  }
+  let titleQuality = 1;
+  let descQuality = 1;
+  if (titleLengthViolations.length > 0 || duplicateTitles.length > 0) {
+    const offenders = titleLengthViolations.length + duplicateTitles.reduce((s, [, f]) => s + f.length - 1, 0);
+    titleQuality = Math.max(0, 1 - offenders / Math.max(1, eligibleMetaPages));
+  }
+  if (descLengthViolations.length > 0 || duplicateDescs.length > 0) {
+    const offenders = descLengthViolations.length + duplicateDescs.reduce((s, [, f]) => s + f.length - 1, 0);
+    descQuality = Math.max(0, 1 - offenders / Math.max(1, eligibleMetaPages));
+  }
+  // Next.js metadata-object fallback: partial credit when no template files
+  // carry inline tags. Requires a real extracted title so empty metadata
+  // objects earn nothing.
+  let nextFallback = 0;
+  if (eligibleMetaPages === 0 && hasMetadataObject && aggregatedTitle) nextFallback = 0.6;
+
+  const effTitleCoverage = eligibleMetaPages > 0 ? titleCoverage : nextFallback;
+  const effDescCoverage = eligibleMetaPages > 0 ? descCoverage : nextFallback;
+
   let cat2Score = 0;
-  if (aggregatedTitle || hasMetadataObject) {
-    cat2Score += 8;
-  }
-  if (aggregatedDesc || hasMetadataObject) {
-    cat2Score += 8;
-  }
-  if (aggregatedCanonical || hasMetadataObject) {
-    cat2Score += 4;
-  }
-  if (hasAnyOG || hasMetadataObject) {
-    cat2Score += 3;
-  }
-  if (hasAnyTwitter || hasMetadataObject) {
-    cat2Score += 2;
-  }
+  cat2Score += Math.round(5 * effTitleCoverage) + Math.round(3 * (effTitleCoverage > 0 ? titleQuality : 0));
+  cat2Score += Math.round(5 * effDescCoverage) + Math.round(3 * (effDescCoverage > 0 ? descQuality : 0));
+  if (aggregatedCanonical || (hasMetadataObject && aggregatedCanonical)) cat2Score += 4;
+  if (hasAnyOG || hasMetadataObject) cat2Score += 3;
+  if (hasAnyTwitter || hasMetadataObject) cat2Score += 2;
 
   // Category 3: Semantic Structure & Headings (25 pts)
   //   - Exactly 1 H1 per page / layout (10 pts)
@@ -505,6 +631,15 @@ export async function runAudit(options = {}) {
     cat1Score = Math.max(0, cat1Score - Math.min(18, aiBotPolicy.blockedCitationBots.length * 6));
   }
 
+  // Metadata/mobile deductions: canonical multiplicity, missing viewport,
+  // missing html lang, thin content.
+  if (multiCanonicalPages.length > 0) {
+    cat2Score = Math.max(0, cat2Score - Math.min(4, multiCanonicalPages.length * 2));
+  }
+  if (pagesWithoutViewport > 0) cat1Score = Math.max(0, cat1Score - Math.min(3, pagesWithoutViewport));
+  if (pagesWithoutLang > 0) cat1Score = Math.max(0, cat1Score - Math.min(2, pagesWithoutLang));
+  if (thinContentPages.length > 0) cat3Score = Math.max(0, cat3Score - Math.min(5, thinContentPages.length));
+
   // Empty-project guard: with zero pages analyzed there is nothing to
   // reward — every category scores 0 so a bare folder can never earn
   // free points (previously an empty repo scored 19/100).
@@ -519,6 +654,8 @@ export async function runAudit(options = {}) {
   else if (totalScore >= 80) grade = 'B';
   else if (totalScore >= 65) grade = 'C';
   else if (totalScore >= 50) grade = 'D';
+
+  // Framework adapter mapping is applied at module scope (ADAPTER_MAP).
 
   const report = {
     timestamp: new Date().toISOString(),
@@ -536,10 +673,27 @@ export async function runAudit(options = {}) {
         dangerousRobots: hasDangerousRobots,
         noindexCount: noindexPages.length,
         insecureLinksCount: totalInsecureLinks,
+        pagesWithoutViewport,
+        pagesWithoutLang,
         aiBotPolicy: aiBotPolicy
       },
-      metadata: { score: cat2Score, max: 25, title: !!aggregatedTitle || hasMetadataObject, description: !!aggregatedDesc || hasMetadataObject, canonical: !!aggregatedCanonical || hasMetadataObject, og: hasAnyOG || hasMetadataObject, twitter: hasAnyTwitter || hasMetadataObject },
-      semantics: { score: cat3Score, max: 25, h1Issues: totalH1Issues, skippedHeadings: totalSkippedHeadings, hasSemantics },
+      metadata: {
+        score: cat2Score,
+        max: 25,
+        title: !!aggregatedTitle || hasMetadataObject,
+        description: !!aggregatedDesc || hasMetadataObject,
+        canonical: !!aggregatedCanonical,
+        og: hasAnyOG || hasMetadataObject,
+        twitter: hasAnyTwitter || hasMetadataObject,
+        titleCoverage: eligibleMetaPages > 0 ? Math.round((pagesWithTitle / eligibleMetaPages) * 100) : (hasMetadataObject && aggregatedTitle ? 60 : 0),
+        descCoverage: eligibleMetaPages > 0 ? Math.round((pagesWithDesc / eligibleMetaPages) * 100) : (hasMetadataObject && aggregatedDesc ? 60 : 0),
+        titleLengthViolations: titleLengthViolations.length,
+        descLengthViolations: descLengthViolations.length,
+        duplicateTitles: duplicateTitles.map(([t, files]) => ({ title: t, files })),
+        duplicateDescriptions: duplicateDescs.map(([d, files]) => ({ description: d, files })),
+        multiCanonicalPages
+      },
+      semantics: { score: cat3Score, max: 25, h1Issues: totalH1Issues, skippedHeadings: totalSkippedHeadings, hasSemantics, thinContentPages },
       schemaAndAi: { score: cat4Score, max: 25, jsonLd: hasAnyJsonLd, llmsTxt: llmsExists, llmsFullTxt: llmsFullExists, totalImages, missingAlt: totalMissingAlt, emptyAlt: totalEmptyAlt }
     },
     filesScanned: analyses.length,
@@ -582,6 +736,14 @@ export async function runAudit(options = {}) {
   if (llmsExists && !llmsFullExists) console.log(`  ${colors.cyan}ℹ llms-full.txt not detected — optional Aug 2026 companion for full-content agent ingestion. Run \`npm run sitemap\` to scaffold.${colors.reset}`);
   if (!hasAnyJsonLd) console.log(`  ${colors.red}✗ Missing Schema.org JSON-LD${colors.reset} - No rich snippets eligibility in Google SERPs.`);
   if (totalMissingAlt > 0) console.log(`  ${colors.yellow}! Missing Image Alt Attributes (${totalMissingAlt} detected)${colors.reset} - Impairs accessibility and Google Image indexing.`);
+  if (titleLengthViolations.length > 0) console.log(`  ${colors.yellow}! Suboptimal title lengths (${titleLengthViolations.length} pages)${colors.reset} - Titles should be 30-60 characters. First: ${titleLengthViolations[0].file} (${titleLengthViolations[0].length} chars)`);
+  if (descLengthViolations.length > 0) console.log(`  ${colors.yellow}! Suboptimal description lengths (${descLengthViolations.length} pages)${colors.reset} - Descriptions should be 70-160 characters.`);
+  if (duplicateTitles.length > 0) console.log(`  ${colors.yellow}! Duplicate titles (${duplicateTitles.length} titles shared by multiple pages)${colors.reset} - Keyword cannibalization risk. Run \`npm run cannibalization\` for details.`);
+  if (duplicateDescs.length > 0) console.log(`  ${colors.yellow}! Duplicate meta descriptions (${duplicateDescs.length} shared)${colors.reset}`);
+  if (multiCanonicalPages.length > 0) console.log(`  ${colors.red}✗ Multiple canonical tags on ${multiCanonicalPages.length} page(s)${colors.reset} - Conflicting canonical signals dilute indexing.`);
+  if (pagesWithoutViewport > 0) console.log(`  ${colors.yellow}! Missing mobile viewport meta on ${pagesWithoutViewport} HTML page(s)${colors.reset} - Mobile-first indexing penalty risk.`);
+  if (pagesWithoutLang > 0) console.log(`  ${colors.yellow}! Missing <html lang> on ${pagesWithoutLang} HTML page(s)${colors.reset} - Accessibility & language targeting.`);
+  if (thinContentPages.length > 0) console.log(`  ${colors.yellow}! Thin content (<120 words) on ${thinContentPages.length} page(s)${colors.reset} - First: ${thinContentPages[0].file} (${thinContentPages[0].words} words).`);
   if (!configExists) console.log(`  ${colors.blue}ℹ Missing sps-seo-config.json${colors.reset} - Initialize config using sps-seo-config.example.json.`);
 
   console.log(`\n${colors.bold}Security & Performance Diagnostics:${colors.reset}`);
@@ -591,12 +753,18 @@ export async function runAudit(options = {}) {
   console.log(`\n${colors.dim}Detailed markdown report generated at: sps-seo-audit-report.md${colors.reset}\n`);
 
   // Write Markdown Report
-  writeMarkdownReport(report, projectDir);
+  const worstOffenders = buildWorstOffenders(analyses);
+  writeMarkdownReport(report, projectDir, { worstOffenders });
 
   return report;
 }
 
-function writeMarkdownReport(report, projectDir) {
+function writeMarkdownReport(report, projectDir, extras = {}) {
+  const offenders = extras.worstOffenders || [];
+  const worstOffendersSection = offenders.length > 0
+    ? `## 6. Worst-Offender Pages (Priority Fixes)\n\n| Page | Issues |\n| :--- | :--- |\n${offenders.map(o => `| \`${o.file}\` | ${o.issues.join(', ')} |`).join('\n')}\n\n---\n\n`
+    : '';
+
   const md = `# SPS SEO Technical Audit Report
 
 **Generated:** ${report.timestamp}  
@@ -646,9 +814,9 @@ function writeMarkdownReport(report, projectDir) {
 - **llms.txt AI Index:** ${report.categories.schemaAndAi.llmsTxt ? '✅ Present' : '⚠️ Missing (Recommended for ChatGPT / Perplexity / Claude)'}
 
 ---
-
+${worstOffendersSection}
 ## 6. Actionable Remediation Plan
-1. **Framework Adapter:** Apply [adapters/${report.framework.type}.md](file://${projectDir}/adapters/${report.framework.type}.md) for idiomatic metadata injection.
+1. **Framework Adapter:** Apply [adapters/${ADAPTER_MAP[report.framework.type] || 'universal-fallback'}.md](file://${projectDir}/adapters/${ADAPTER_MAP[report.framework.type] || 'universal-fallback'}.md) for idiomatic metadata injection.
 2. **JSON-LD Schema:** Inject appropriate templates from \`schemas/\` into the root layout.
 3. **Alt Attributes:** Add descriptive, contextual alt attributes to all flagged images.
 4. **Crawlability:** Generate \`sitemap.xml\` and \`robots.txt\` using \`npm run sitemap\`.
@@ -665,6 +833,29 @@ function writeMarkdownReport(report, projectDir) {
   } catch (e) {
     console.error('Failed to write audit report markdown:', e.message);
   }
+}
+
+// 4b. Worst-offender ranking (surface the pages needing priority fixes)
+function buildWorstOffenders(analyses, limit = 10) {
+  const offenders = [];
+  for (const a of analyses) {
+    const issues = [];
+    if (a.ext === '.html' || a.ext === '.htm') {
+      if (!a.title) issues.push('missing title');
+      if (!a.description) issues.push('missing description');
+      if (!a.hasViewport) issues.push('no viewport');
+      if (!a.hasHtmlLang) issues.push('no html lang');
+      if (a.canonicalCount > 1) issues.push(`${a.canonicalCount} canonical tags`);
+    }
+    if (a.headings.h1Count === 0 && a.headings.total > 0) issues.push('zero H1');
+    if (a.headings.h1Count > 1) issues.push(`${a.headings.h1Count} H1 tags`);
+    if (a.images.missingAlt > 0) issues.push(`${a.images.missingAlt} missing alt`);
+    if (a.images.emptyAlt > 0) issues.push(`${a.images.emptyAlt} empty alt`);
+    if (a.wordCount > 0 && a.wordCount < 120) issues.push(`thin content (${a.wordCount} words)`);
+    if (a.insecureLinksCount > 0) issues.push(`${a.insecureLinksCount} unsafe _blank links`);
+    if (issues.length > 0) offenders.push({ file: a.file, issues, count: issues.length });
+  }
+  return offenders.sort((x, y) => y.count - x.count).slice(0, limit);
 }
 
 // 5. AI bot policy analyzer (2026-correct)
@@ -720,12 +911,14 @@ function analyzeAiBotPolicy(robotsPath) {
         break; // first non-empty rule wins per bot
       }
     }
-    // Wildcard block
+    // Wildcard block: applies to every bot without an explicit rule
     if (token === '*') {
-      for (const [bot, _] of [...tokenRules, ...CITATION_BOTS, ...TRAINING_BOTS]) {
-        if (!tokenRules.has(bot) && rule) tokenRules.set(bot, rule);
+      if (!rule) continue;
+      const knownBots = new Set([...CITATION_BOTS, ...TRAINING_BOTS]);
+      for (const bot of knownBots) {
+        if (!tokenRules.has(bot)) tokenRules.set(bot, rule);
       }
-      // Wildcard does NOT retroactively set already-specific tokens
+      // Wildcard does NOT retroactively override already-specific tokens
     } else {
       tokenRules.set(token, rule);
     }

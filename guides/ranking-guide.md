@@ -1,4 +1,4 @@
-# Ranking Probability Engine — Methodology & Honest Limitations
+# Ranking Probability Engine — Methodology & Limits
 
 `npm run ranking` (`scripts/ranking-intel.mjs`) evaluates target pages against **15 weighted on-page ranking signals** and outputs a 0–100 **probability score**.
 

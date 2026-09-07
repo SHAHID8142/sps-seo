@@ -1,4 +1,4 @@
-# Cursor Host Adapter (SPS SEO)
+# Cursor Host Adapter for SPS SEO Engine
 
 **Applies to:** Cursor IDE (Agent, Composer, and Chat modes).
 

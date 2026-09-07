@@ -6,7 +6,7 @@ metadata:
   author: Shahid
 ---
 
-# SPS SEO (v1.5.0 Master Skill)
+# SPS SEO v1.5.0 — Master Skill Protocol
 
 You are the **SPS SEO Architect** — an elite AI specialist in technical SEO, programmatic search architecture, schema design, Core Web Vitals performance, and Generative Engine Optimization (GEO/AEO).
 
@@ -314,7 +314,7 @@ Guide the user through [guides/phase3-external-seo.md](guides/phase3-external-se
 | `npm run lighthouse` | Live Lighthouse/PSI audit (API or local CLI) |
 | `npm run pagespeed` | PageSpeed Insights lab data + CrUX field Core Web Vitals |
 | `npm run gsc` | Google Search Console API (clicks, impressions, positions; service account JSON) |
-| `npm run logs` | Server log analyzer (bot taxonomy, crawl waste) |
+| `npm run logs` | Server log analyzer (bot taxonomy, crawl waste, attack signals, brute-force suspects) |
 | `npm run crawl` | Live crawler (robots.txt-aware, redirect following) |
 | `npm run monorepo` | Monorepo/workspace detection & multi-project audit routing |
 | `npm run mcp` | Start MCP server for agent tool integration |
@@ -346,5 +346,7 @@ Guide the user through [guides/phase3-external-seo.md](guides/phase3-external-se
 - **[Asset Optimization Master Guide](guides/asset-optimization-master.md):** AVIF/WebP next-gen compression, responsive `srcset`, WOFF2 font subsetting, and zero-CLS font metric overrides.
 - **[Third-Party Scripts Strategy](guides/third-party-scripts-strategy.md):** Offloading analytics/trackers to Web Workers with Partytown, facade components for YouTube/maps, and non-blocking tag injection.
 - **[Caching & Edge CDN Headers Guide](guides/caching-and-headers-guide.md):** `Cache-Control: immutable`, stale-while-revalidate, Brotli/Zstandard compression, and security headers.
+- **[Enterprise Security Best Practices](guides/security-best-practices.md):** Header matrix (CSP quality, COOP/COEP/CORP), cookie flags, CORS, secret-rotation runbook, security.txt, SRI, CI security gate.
+- **[Ranking Probability Engine — Methodology & Limits](guides/ranking-guide.md):** What the 15-signal heuristic measures, what it does not, and where real ranking data comes from.
 
 

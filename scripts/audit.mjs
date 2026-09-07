@@ -306,8 +306,12 @@ function analyzeContent(filePath, content) {
   // Language declaration (SC 3.1.1 + hreflang baseline)
   const hasHtmlLang = /<html\b[^>]*\slang=["'][^"']+["']/i.test(content);
 
-  // Canonical multiplicity (multiple canonical tags on one page is a defect)
-  const canonicalCount = (content.match(/<link\s+rel=["']canonical["']/gi) || []).length;
+  // Canonical multiplicity (multiple canonical tags on one page is a
+  // defect). Only meaningful for HTML-emitting files — markdown docs
+  // legitimately contain multiple canonical snippets as code examples.
+  const canonicalCount = isMarkdown
+    ? 0
+    : (content.match(/<link\s+rel=["']canonical["']/gi) || []).length;
 
   // Semantic landmarks
   const hasMain = /<main\b/i.test(content);

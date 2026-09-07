@@ -24,6 +24,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+
+// git history helper import is dynamic to keep zero-dep startup fast
+function await_import(spec) {
+  // Static import already done at top for spawnSync; kept for symmetry
+  return { spawnSync };
+}
 
 const CWD = process.cwd();
 
@@ -49,6 +56,13 @@ const SCAN_EXTS = new Set([
 const SECRET_FILENAMES = /^(?:\.env(\..+)?|\.npmrc|\.netrc|\.git-credentials|\.htpasswd|\.pgpass|\.gitconfig|\.dockercfg|\.docker\/config\.json|id_rsa(\.pub)?|id_ed25519(\.pub)?|id_ecdsa(\.pub)?|credentials(\.json)?|service-account.*\.json|\.aws\/credentials|secrets?\.(json|ya?ml|txt)|\.secrets)$/i;
 
 const PLACEHOLDERS = /^(x{4,}|your[-_]?(key|token|secret)?[-_]?|example|placeholder|<.+>|\$\{.+\}|process\.env\.|_+|test|changeme|dummy|sample)$/i;
+
+// Values that are *documented* example credentials (AWS docs key, etc.)
+const EXAMPLE_VALUES = /(?:EXAMPLE|XXXXXXXX|ZZZZZZZZ|1234567890|AAAABBBB|abcdefghij|qwertyuiop|0123456789abcdef)$/i;
+
+function isExampleValue(val) {
+  return EXAMPLE_VALUES.test(val) || /EXAMPLE$/i.test(val);
+}
 
 // Test fixtures intentionally contain fake secrets — flagging them is noise.
 // Only exact directory segments match (so a temp dir named
@@ -279,11 +293,28 @@ export function runSecretsScan(options = {}) {
   totalScore = Math.max(0, Math.min(100, Math.round(totalScore)));
   const grade = totalScore >= 95 ? 'A' : totalScore >= 80 ? 'B' : totalScore >= 50 ? 'C' : 'F';
 
+  // ── Optional Pass 3: git history scan (--history) ──────────────
+  // Working-tree scans can never catch secrets that were committed and
+  // later deleted. This pass streams `git log -p --all` and applies the
+  // same vendor patterns, capped to keep the scan bounded.
+  let historyFindings = [];
+  const wantHistory = options.history || process.argv.includes('--history');
+  if (wantHistory && fs.existsSync(path.join(projectDir, '.git'))) {
+    historyFindings = scanGitHistory(projectDir);
+    for (const f of historyFindings) {
+      findings.push(f);
+      penalize(4, f.severity);
+    }
+    totalScore = Math.max(0, Math.min(100, Math.round(totalScore)));
+  }
+
   const result = {
     timestamp: new Date().toISOString(),
     score: totalScore,
     grade,
     findings,
+    historyScanned: wantHistory,
+    historyFindings: historyFindings.length,
     counts: {
       critical: findings.filter(f => f.severity === 'critical').length,
       high: findings.filter(f => f.severity === 'high').length,
@@ -302,6 +333,69 @@ export function runSecretsScan(options = {}) {
 function maskValue(val) {
   if (val.length <= 8) return '***';
   return val.slice(0, 4) + '…' + val.slice(-4) + ` (${val.length} chars)`;
+}
+
+// Scan git history for secrets that were committed then removed.
+// Streams `git log -p --all -U0` with a hard output cap (50MB) and
+// attributes findings to the introducing commit.
+function scanGitHistory(projectDir) {
+  return _scanGitHistory(projectDir, { spawnSync });
+}
+
+function _scanGitHistory(projectDir, child_process) {
+  const findings = [];
+  const MAX_OUTPUT = 50 * 1024 * 1024; // 50MB cap
+  const res = child_process.spawnSync('git', ['log', '-p', '--all', '-U0', '--no-color'], {
+    cwd: projectDir,
+    encoding: 'utf8',
+    maxBuffer: MAX_OUTPUT,
+    timeout: 120000,
+    windowsHide: true
+  });
+  if (res.error || !res.stdout) return findings;
+  let blob = res.stdout;
+  if (blob.length >= MAX_OUTPUT) blob = blob.slice(0, MAX_OUTPUT); // truncated scan
+
+  const commitRe = /^commit ([0-9a-f]{40})/gm;
+  const commitPositions = [];
+  let cm;
+  while ((cm = commitRe.exec(blob)) !== null) commitPositions.push({ hash: cm[1], index: cm.index });
+
+  for (let i = 0; i < commitPositions.length; i++) {
+    const chunk = blob.slice(commitPositions[i].index, i + 1 < commitPositions.length ? commitPositions[i + 1].index : blob.length);
+    // Track which file each hunk belongs to so test fixtures can be skipped
+    const diffFileRe = /^diff --git a\/(\S+) b\/(\S+)/gm;
+    const filePositions = [];
+    let fm;
+    while ((fm = diffFileRe.exec(chunk)) !== null) filePositions.push({ file: fm[2], index: fm.index });
+
+    for (const pat of SECRET_PATTERNS) {
+      pat.regex.lastIndex = 0;
+      let m;
+      let found = false;
+      while ((m = pat.regex.exec(chunk)) !== null && !found) {
+        const val = m[0];
+        if (PLACEHOLDERS.test(val)) continue;
+        if (isExampleValue(val)) continue;
+        if (pat.validator && !pat.validator(val)) continue;
+        // Resolve the file this match belongs to and skip test fixtures
+        const curFile = filePositions.length
+          ? [...filePositions].reverse().find(fp => fp.index <= m.index)?.file
+          : null;
+        if (curFile && isTestArtifact(curFile)) continue;
+        findings.push({
+          file: `git-history@${commitPositions[i].hash.slice(0, 10)}`,
+          line: chunk.slice(0, m.index).split('\n').length,
+          type: `${pat.name} (in git history)`,
+          severity: pat.severity === 'medium' ? 'medium' : 'high',
+          preview: maskValue(val)
+        });
+        found = true; // one finding per pattern per commit is enough
+      }
+    }
+    if (findings.length > 100) break; // hard cap — the history is compromised anyway
+  }
+  return findings;
 }
 
 function printConsole(result) {

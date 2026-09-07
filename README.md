@@ -2,7 +2,7 @@
 
 > **The Ultimate Framework-Agnostic AI Agent Skill & Autonomous Technical SEO Intelligence System**
 
-[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](VERSION)
+[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](VERSION)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Architecture](https://img.shields.io/badge/architecture-hybrid%20cli%20%2B%20agent-purple.svg)](METHOD-CARD.md)
 [![SEO & AEO](https://img.shields.io/badge/search-Google%20%2B%20AI%20Overviews-orange.svg)](guides/aeo-geo-optimization.md)
@@ -118,9 +118,11 @@ Unlike subjective SEO checklists, SPS SEO uses a **100-point deterministic scori
 
 ### Performance & Security
 - **Core Web Vitals Scanner** (`perf.mjs`): Enforces 1.5MB payload limits, flags >200KB images, checks `font-display: swap`, catches missing dimensions (CLS guard).
-- **Security Headers Auditor** (`security.mjs`): Checks HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy.
-- **Secret Leak Scanner** (`secrets.mjs`): Scans for hardcoded credentials, API keys, and exposed `.env` files.
+- **Security Auditor** (`security-audit.mjs`): Live header probe with value validation (HSTS strength, CSP quality, nosniff), cookie flag audit (Secure/HttpOnly/SameSite), COOP/COEP/CORP, CORS wildcard detection, debug-endpoint probing (`--url https://yoursite.com`), source-map exposure, security.txt, recursive served-dir scanning.
+- **Secret Leak Scanner** (`secrets-scan.mjs`): 40+ vendor token families (AWS/Azure/GCP, GitHub, OpenAI, Anthropic, Stripe, Slack, Vercel, Netlify, Telegram, Cloudflare, Firebase, Supabase, DB connection strings, PKCS#8 keys), scans `.env*`, `.npmrc`, `id_rsa`, comments, `public/`.
+- **Dependency Vulnerability Audit** (`dep-audit.mjs`): Wraps `npm audit` (pnpm/yarn auto-detected); fails CI on critical/high CVEs.
 - **Bundle Analyzer** (`bundle.mjs`): Audits JavaScript bundle weight and third-party scripts.
+- **Log Analyzer** (`log-analyzer.mjs`): Crawl-waste detection plus security signals — brute-force suspects, path-traversal/SQLi/XSS probes, per-IP rate anomalies.
 
 ### AI Search Optimization (AEO/GEO)
 - **AI Search Optimizer**: Generates `llms.txt` for LLM citations, FAQ schema for answer capsules, speakable schema for voice search.

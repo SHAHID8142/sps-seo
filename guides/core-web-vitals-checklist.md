@@ -1,4 +1,4 @@
-# Core Web Vitals & Technical Performance Checklist (2026 Standards)
+# Core Web Vitals & Technical Performance Checklist
 
 Google heavily weights page experience signals. Slow or unstable websites suffer ranking suppression in both traditional SERPs and AI Overviews.
 

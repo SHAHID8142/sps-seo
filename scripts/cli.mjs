@@ -45,6 +45,7 @@ const COMMANDS = {
   'a11y': 'a11y.mjs',
   'security': 'security-audit.mjs',
   'secrets': 'secrets-scan.mjs',
+  'deps': 'dep-audit.mjs',
   'lighthouse': 'lighthouse.mjs',
   'ranking': 'ranking-intel.mjs',
   'rank-tracker': 'ranking-tracker.mjs',

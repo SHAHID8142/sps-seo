@@ -30,6 +30,8 @@
     "a11y": "node scripts/a11y.mjs",
     "security": "node scripts/security-audit.mjs",
     "security:json": "node scripts/security-audit.mjs --json",
+    "deps": "node scripts/dep-audit.mjs",
+    "deps:json": "node scripts/dep-audit.mjs --json",
     "secrets": "node scripts/secrets-scan.mjs",
     "lighthouse": "node scripts/lighthouse.mjs",
     "ranking": "node scripts/ranking-intel.mjs",

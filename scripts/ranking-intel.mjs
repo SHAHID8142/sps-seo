@@ -220,6 +220,10 @@ export function evaluateRankingProbability(options = {}) {
   console.log('\n====================================================');
   console.log('       SPS SEO SERP RANKING PROBABILITY ENGINE      ');
   console.log('====================================================\n');
+  console.log('ℹ️  METHOD: static 15-signal heuristic over local source files.');
+  console.log('   This is an on-page READINESS estimate — NOT a live SERP');
+  console.log('   position or prediction. Real positions: npm run gsc / rank-tracker.');
+  console.log('   Methodology: guides/ranking-guide.md\n');
 
   console.log(`Target Keyword:     "${targetKeyword}"`);
   console.log(`Pages Evaluated:    ${pageScores.length} template(s)`);

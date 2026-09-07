@@ -199,6 +199,10 @@ ${brand} | ${siteUrl}`
   console.log('\n====================================================');
   console.log('       SPS SEO BACKLINK EQUITY & DIGITAL PR         ');
   console.log('====================================================\n');
+  console.log('ℹ️  METHOD: audits OUTBOUND links in your source + generates');
+  console.log('   outreach search-operator queries. This tool does NOT fetch');
+  console.log('   live backlink data (Ahrefs/Semrush/GSC APIs). Run the');
+  console.log('   generated queries in Google/Bing, or wire GSC for real data.\n');
 
   console.log(`Brand Name:         ${brand}`);
   console.log(`Domain:             ${host}`);

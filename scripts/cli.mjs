@@ -2,7 +2,7 @@
 
 /**
  * SPS SEO Unified CLI Router
- * Version: 1.4.0
+ * Version: 1.5.0
  *
  * Single entrypoint for all SPS SEO tools:
  *   sps-seo audit            deterministic 100-point audit
@@ -73,7 +73,7 @@ const COMMANDS = {
 };
 
 const HELP = `
-SPS SEO v1.4.0 — Framework-Agnostic Technical SEO Intelligence
+SPS SEO v1.5.0 — Framework-Agnostic Technical SEO Intelligence
 
 Usage: sps-seo <command> [options]
   (Run 'sps-seo' with no command for interactive consultant mode)

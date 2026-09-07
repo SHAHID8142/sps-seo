@@ -2,7 +2,7 @@
 
 /**
  * SPS SEO Deterministic Audit Engine
- * Version: 1.4.0
+ * Version: 1.5.0
  * 
  * Zero-dependency Node.js ESM scanner for framework detection, AST/HTML parsing,
  * heading hierarchy analysis, alt attribute validation, metadata verification,
@@ -85,8 +85,25 @@ function detectFramework(projectDir) {
     return { type: 'sveltekit', variant: 'sveltekit', label: 'SvelteKit', configFile: 'svelte.config.js' };
   }
 
+  if (deps['@remix-run/node'] || deps['@remix-run/react'] || hasFile('remix.config.js')) {
+    return { type: 'remix', variant: 'remix', label: 'Remix', configFile: 'remix.config.js' };
+  }
+
+  if (deps['gatsby'] || hasFile('gatsby-config.js') || hasFile('gatsby-config.mjs')) {
+    return { type: 'gatsby', variant: 'gatsby', label: 'Gatsby', configFile: 'gatsby-config.js' };
+  }
+
+  if (deps['@angular/core']) {
+    return { type: 'angular', variant: 'angular', label: 'Angular', configFile: hasFile('angular.json') ? 'angular.json' : null };
+  }
+
+  if (deps['laravel-mix'] || deps['@laravel/vite-plugin'] || hasFile('artisan')) {
+    return { type: 'laravel', variant: 'laravel', label: 'Laravel (Blade)', configFile: hasFile('vite.config.js') ? 'vite.config.js' : null };
+  }
+
   if (deps['vite'] || hasFile('vite.config.ts') || hasFile('vite.config.js')) {
-    return { type: 'vite', variant: 'spa-react', label: 'Vite / SPA', configFile: hasFile('vite.config.ts') ? 'vite.config.ts' : 'vite.config.js' };
+    const variant = deps['vue'] ? 'spa-vue' : deps['svelte'] ? 'spa-svelte' : deps['preact'] ? 'spa-preact' : 'spa-react';
+    return { type: 'vite', variant, label: `Vite / ${variant.replace('spa-', '').replace(/^\w/, c => c.toUpperCase())} SPA`, configFile: hasFile('vite.config.ts') ? 'vite.config.ts' : 'vite.config.js' };
   }
 
   if (hasFile('index.html')) {
@@ -356,6 +373,10 @@ const ADAPTER_MAP = {
   astro: 'astro',
   nuxt: 'universal-fallback',
   sveltekit: 'universal-fallback',
+  remix: 'universal-fallback',
+  gatsby: 'universal-fallback',
+  angular: 'universal-fallback',
+  laravel: 'universal-fallback',
   vite: 'vite-react',
   'static-html': 'static-html',
   unknown: 'universal-fallback'

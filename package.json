@@ -1,6 +1,6 @@
 {
   "name": "sps-seo",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Comprehensive, framework-agnostic AI agent skill and deterministic audit engine for technical SEO, on-page optimization, JSON-LD schema, performance, accessibility, security, and modern AI Search Optimization (GEO/AEO/AIO/SXO).",
   "type": "module",
   "engines": {

@@ -246,23 +246,36 @@ function auditPublicFolderExposure(projectDir) {
   const exposedFiles = [];
 
   for (const pDir of publicDirs) {
-    try {
-      const files = fs.readdirSync(pDir, { withFileTypes: true });
-      for (const file of files) {
+    // Recursive walk — sensitive files nested in subdirectories
+    // (e.g. public/backups/.env) are just as web-accessible.
+    (function walkServed(dir, relBase) {
+      let entries;
+      try {
+        entries = fs.readdirSync(dir, { withFileTypes: true });
+      } catch {
+        return;
+      }
+      for (const entry of entries) {
+        const full = path.join(dir, entry.name);
+        const rel = relBase ? `${relBase}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) {
+          if (entry.name === 'node_modules' || entry.name === '.git') continue;
+          walkServed(full, rel);
+          continue;
+        }
+        if (!entry.isFile()) continue;
         for (const regex of PUBLIC_DANGEROUS_FILES) {
-          if (regex.test(file.name)) {
+          if (regex.test(entry.name)) {
             exposedFiles.push({
-              dir: path.relative(projectDir, pDir),
-              name: file.name,
-              fullPath: path.join(pDir, file.name)
+              dir: path.relative(projectDir, dir),
+              name: rel,
+              fullPath: full
             });
             break;
           }
         }
       }
-    } catch {
-      // ignore
-    }
+    })(pDir, '');
   }
 
   return exposedFiles;
@@ -419,18 +432,42 @@ function auditTemplatesAndBestPractices(projectDir) {
     }
 
     // 5. External CDN scripts missing Subresource Integrity (SRI)
+    // Applies to ANY cross-origin script and cross-origin stylesheets:
+    // a tampered CDN response executes arbitrary code. Restricting the
+    // check to 6 hardcoded CDN hosts left Google Fonts, Tailwind CDN,
+    // and thousands of others unchecked.
     const scriptRegex = /<script\b([^>]*src=["']https?:\/\/(?!localhost)[^"']*["'][^>]*)>/gi;
     while ((match = scriptRegex.exec(content)) !== null) {
       const attrs = match[1];
       const hasIntegrity = /\bintegrity=/i.test(attrs);
       const hasCrossOrigin = /\bcrossorigin=/i.test(attrs);
-      // Only flag if loading from external CDN (e.g. cdnjs, unpkg, jsdelivr, stackpath)
-      if (/(?:cdnjs|unpkg|jsdelivr|bootstrapcdn|statically|rawgit)/i.test(attrs) && (!hasIntegrity || !hasCrossOrigin)) {
-        const srcMatch = /src=["']([^"']+)["']/i.exec(attrs);
+      const srcMatch = /src=["']([^"']+)["']/i.exec(attrs);
+      const src = srcMatch ? srcMatch[1] : 'unknown';
+      // Cross-origin = different host than the page's own (heuristic:
+      // relative + same-origin URLs don't need SRI; absolute external do)
+      const isExternal = /^https?:\/\//i.test(src) && !/\/localhost[:/]/.test(src);
+      if (isExternal && (!hasIntegrity || !hasCrossOrigin)) {
         missingSriScripts.push({
           file: relPath,
-          src: srcMatch ? srcMatch[1] : 'unknown',
+          src,
           missing: !hasIntegrity ? 'integrity' : 'crossorigin'
+        });
+      }
+    }
+
+    // 5b. Cross-origin stylesheets missing integrity (defense-in-depth;
+    // CSS injection can exfiltrate data via attribute selectors)
+    const linkCssRegex = /<link\b([^>]*rel=["']stylesheet["'][^>]*)>/gi;
+    while ((match = linkCssRegex.exec(content)) !== null) {
+      const attrs = match[1];
+      const hrefMatch = /href=["']([^"']+)["']/i.exec(attrs);
+      const href = hrefMatch ? hrefMatch[1] : '';
+      if (!/^https?:\/\//i.test(href) || /\/localhost[:/]/.test(href)) continue;
+      if (!/\bintegrity=/i.test(attrs)) {
+        missingSriScripts.push({
+          file: relPath,
+          src: href,
+          missing: 'integrity (stylesheet)'
         });
       }
     }

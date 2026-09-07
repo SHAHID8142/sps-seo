@@ -162,8 +162,9 @@ Sitemap: ${baseUrl.replace(/\/$/, '')}/sitemap.xml
   }
 
   // 5. Scan and patch image alt attributes in files
-  const fileExts = ['.html', '.astro', '.tsx', '.jsx', '.vue', '.svelte', '.md', '.mdx'];
+    const fileExts = ['.html', '.astro', '.tsx', '.jsx', '.vue', '.svelte', '.md', '.mdx'];
   const IGNORED = ['node_modules', '.git', '.next', 'dist', 'build'];
+  const contentFiles = [];
 
   function walk(dir) {
     let entries;
@@ -178,6 +179,7 @@ Sitemap: ${baseUrl.replace(/\/$/, '')}/sitemap.xml
       if (entry.isDirectory()) {
         walk(fullPath);
       } else if (entry.isFile() && fileExts.includes(path.extname(entry.name))) {
+        contentFiles.push(fullPath);
         checkAndFixImagesInFile(fullPath);
       }
     }
@@ -226,9 +228,145 @@ Sitemap: ${baseUrl.replace(/\/$/, '')}/sitemap.xml
         }
       });
     }
+  } // end checkAndFixImagesInFile
+
+  // Populate contentFiles by walking the project
+  walk(projectDir);
+
+  // 6. Inject missing meta descriptions (content-derived)
+  for (const filePath of contentFiles) {
+    let content;
+    try { content = fs.readFileSync(filePath, 'utf8'); } catch { continue; }
+    if (/<meta\s+name=["']description["']/i.test(content)) continue; // already has one
+    // Skip non-content pages
+    if (!/<(h1|main|article|title)/i.test(content)) continue;
+
+    const relPath = path.relative(projectDir, filePath);
+    // Derive description from first h1 or title
+    const h1 = /<h1[^>]*>([\s\S]*?)<\/h1>/i.exec(content);
+    const title = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(content);
+    const firstP = /<p[^>]*>([\s\S]*?)<\/p>/i.exec(content);
+    let desc = '';
+    if (h1 && firstP) {
+      desc = h1[1].trim() + ' — ' + firstP[1].replace(/<[^>]+>/g, '').trim().slice(0, 120);
+    } else if (title) {
+      desc = title[1].trim().slice(0, 155);
+    } else {
+      continue; // can't derive
+    }
+    desc = desc.replace(/["'<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 158);
+    if (desc.length < 20) continue;
+
+    const injectTag = `<meta name="description" content="${desc}">`;
+    let patched = false;
+    let patchContent = content;
+
+    // Insert after <title> if present, or after <meta charset>
+    if (/<title[^>]*>[\s\S]*?<\/title>/i.test(patchContent)) {
+      patchContent = patchContent.replace(/(<title[^>]*>[\s\S]*?<\/title>)/i, `$1\n  ${injectTag}`);
+      patched = true;
+    } else if (/<meta\s+charset/i.test(patchContent)) {
+      patchContent = patchContent.replace(/(<meta\s+charset[^>]*>)/i, `$1\n  ${injectTag}`);
+      patched = true;
+    }
+
+    if (patched) {
+      actions.push({
+        type: 'patch-file',
+        target: relPath,
+        desc: 'Inject missing meta description tag',
+        execute: () => { fs.writeFileSync(filePath, patchContent, 'utf8'); }
+      });
+    }
   }
 
-  walk(projectDir);
+  // 7. Inject missing OpenGraph tags
+  for (const filePath of contentFiles) {
+    let content;
+    try { content = fs.readFileSync(filePath, 'utf8'); } catch { continue; }
+    if (/og:title/i.test(content)) continue; // already has OG
+    if (!/<(h1|title)/i.test(content)) continue;
+
+    const relPath = path.relative(projectDir, filePath);
+    const title = (/<title[^>]*>([\s\S]*?)<\/title>/i.exec(content) || [])[1]?.trim() || '';
+    const desc = (/<meta\s+name=["']description["'][^>]*content=["']([^"']*)["']/i.exec(content) || [])[1] || '';
+    if (!title) continue;
+
+    const ogBlock = `  <meta property="og:title" content="${title}">\n  <meta property="og:description" content="${desc}">\n  <meta property="og:type" content="website">`;
+    let patchContent = content;
+    let patched = false;
+
+    if (/<\/title>/i.test(patchContent)) {
+      patchContent = patchContent.replace(/(<\/title>)/i, `$1\n${ogBlock}`);
+      patched = true;
+    }
+
+    if (patched) {
+      actions.push({
+        type: 'patch-file',
+        target: relPath,
+        desc: 'Inject missing OpenGraph social tags (og:title, og:description)',
+        execute: () => { fs.writeFileSync(filePath, patchContent, 'utf8'); }
+      });
+    }
+  }
+
+  // 8. Inject FAQPage schema into pages with visible Q&A content
+  for (const filePath of contentFiles) {
+    let content;
+    try { content = fs.readFileSync(filePath, 'utf8'); } catch { continue; }
+    if (/FAQPage/i.test(content)) continue; // already has FAQ schema
+
+    const relPath = path.relative(projectDir, filePath);
+    // Detect question headings (h2/h3 with "What", "How", "Why", "Who", "When", "Where")
+    const qHeadings = [];
+    const headingRegex = /<(h[23])[^>]*>([\s\S]*?)<\/\1>/gi;
+    let hm;
+    while ((hm = headingRegex.exec(content)) !== null) {
+      const text = hm[2].replace(/<[^>]+>/g, '').trim();
+      if (/^(what|how|why|who|when|where|can|is|are|does|do)\b/i.test(text)) {
+        // Find the next <p> after this heading for the answer
+        const afterIdx = hm.index + hm[0].length;
+        const nextP = /<p[^>]*>([\s\S]*?)<\/p>/i.exec(content.slice(afterIdx, afterIdx + 1000));
+        if (nextP) {
+          qHeadings.push({
+            q: text,
+            a: nextP[1].replace(/<[^>]+>/g, '').trim().slice(0, 300)
+          });
+        }
+      }
+    }
+
+    if (qHeadings.length < 2) continue; // Need at least 2 Q&A pairs for FAQPage
+
+    const faqSchema = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      'mainEntity': qHeadings.map(item => ({
+        '@type': 'Question',
+        'name': item.q,
+        'acceptedAnswer': { '@type': 'Answer', 'text': item.a }
+      }))
+    }, null, 2);
+
+    const scriptTag = `  <script type="application/ld+json">\n  ${faqSchema}\n  </script>`;
+    let patchContent = content;
+    let patched = false;
+
+    if (/<\/head>/i.test(patchContent)) {
+      patchContent = patchContent.replace(/(<\/head>)/i, `${scriptTag}\n$1`);
+      patched = true;
+    }
+
+    if (patched) {
+      actions.push({
+        type: 'patch-file',
+        target: relPath,
+        desc: `Inject FAQPage schema (${qHeadings.length} Q&A pairs detected)`,
+        execute: () => { fs.writeFileSync(filePath, patchContent, 'utf8'); }
+      });
+    }
+  }
 
   // Report actions
   if (actions.length === 0) {
@@ -250,13 +388,33 @@ Sitemap: ${baseUrl.replace(/\/$/, '')}/sitemap.xml
 
   // Apply fixes
   console.log('\n🚀 Executing fixes...');
+  const backupDir = path.join(projectDir, '.sps-seo-backups', new Date().toISOString().replace(/[:.]/g, '-'));
+  const backedUp = new Set();
+  function backupBeforeWrite(relTarget, filePath) {
+    // New-file creates need no backup; existing files get one copy per run
+    if (!fs.existsSync(filePath) || backedUp.has(relTarget)) return;
+    try {
+      const backupPath = path.join(backupDir, relTarget);
+      fs.mkdirSync(path.dirname(backupPath), { recursive: true });
+      fs.copyFileSync(filePath, backupPath);
+      backedUp.add(relTarget);
+    } catch (e) {
+      console.warn(`  ⚠️ Backup failed for ${relTarget}: ${e.message} (skipping backup)`);
+    }
+  }
   for (const a of actions) {
     try {
+      if (a.type === 'patch-file') {
+        backupBeforeWrite(a.target, path.join(projectDir, a.target));
+      }
       a.execute();
       console.log(`  ✓ Applied: ${a.target}`);
     } catch (err) {
       console.error(`  ✗ Failed to apply fix for ${a.target}:`, err.message);
     }
+  }
+  if (backedUp.size > 0) {
+    console.log(`\n💾 Originals backed up to: ${path.relative(projectDir, backupDir)} (${backedUp.size} file(s))`);
   }
 
   console.log('\n✅ Remediation complete! Running verification audit...\n');

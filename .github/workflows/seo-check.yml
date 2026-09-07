@@ -28,6 +28,13 @@ jobs:
         run: |
           npm test
 
+      - name: Scaffold Crawlability Assets (robots/sitemap/llms)
+        run: |
+          # robots.txt, sitemap.xml, llms.txt are gitignored generated
+          # artifacts — a clean checkout has none, so scaffold them before
+          # auditing or the technical category scores 0 in CI only.
+          node scripts/generate-sitemap.mjs
+
       - name: Run SPS SEO Deterministic Audit
         id: audit
         run: |

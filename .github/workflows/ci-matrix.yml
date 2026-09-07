@@ -144,10 +144,12 @@ jobs:
           EOF
           done
 
-          # Time the audit
+          # Time the audit (path resolved from the checkout, not hardcoded)
+          AUDIT_SCRIPT="${{ github.workspace }}/scripts/audit.mjs"
+          test -f "$AUDIT_SCRIPT" || { echo "audit.mjs not found at $AUDIT_SCRIPT"; exit 1; }
           START=$(date +%s%N)
           cd /tmp/bench-project
-          node /Volumes/SSD/CODES/sps-seo/scripts/audit.mjs --json > /dev/null 2>&1
+          node "$AUDIT_SCRIPT" --json > /dev/null
           END=$(date +%s%N)
           DURATION=$(( (END - START) / 1000000 ))
           echo "Audit of 50 pages completed in ${DURATION}ms"

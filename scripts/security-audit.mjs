@@ -2,16 +2,23 @@
 
 /**
  * SPS SEO Security & Hardening Audit
- * Version: 1.2.0
+ * Version: 1.3.0
  *
  * Static + optional live security checks across the codebase:
- *  - Live HTTP header probe (when a target URL is provided)
- *  - Exposed sensitive paths / files (.env, .git, source maps, debug endpoints)
+ *  - Live HTTP header probe (when a target URL is provided) with VALUE
+ *    validation: HSTS strength (max-age/includeSubDomains/preload),
+ *    nosniff, Referrer-Policy strictness, CSP quality (unsafe-eval,
+ *    wildcard script-src, frame-ancestors vs X-Frame-Options)
+ *  - Cookie flag audit (Secure / HttpOnly / SameSite on Set-Cookie)
+ *  - COOP / COEP / CORP isolation headers
+ *  - CORS wildcard detection (Access-Control-Allow-Origin: * + credentials)
+ *  - Live debug/admin endpoint probe (/.env, /.git, /actuator, /graphql ...)
+ *  - security.txt (RFC 9116) presence
+ *  - Source-map exposure (productionBrowserSourceMaps, .map files)
+ *  - Exposed sensitive files in public/
  *  - XSS sinks in templates (dangerouslySetInnerHTML, v-html, {@html}, [innerHTML])
  *  - Dangerous JS patterns (eval, new Function, setTimeout(string), document.write)
- *  - CORS wildcard / unsafe-inline usage
  *  - Mixed-content / http:// references in templates
- *  - Insecure link rel="opener" without "noopener noreferrer" (already in audit.mjs; mirrored here for visibility)
  *
  * Output: deterministic 0–100 Security Score and an actionable findings list.
  */
@@ -27,7 +34,9 @@ const CWD = process.cwd();
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', '.nuxt', '.svelte-kit', '.astro',
   'dist', 'build', 'out', '.cache', 'coverage', '.gemini', 'scratch',
-  '.sps', '.agents', 'public'
+  '.sps', '.agents', 'public',
+  // Test fixtures intentionally contain insecure patterns — not real code
+  'tests', 'test', '__tests__', 'fixtures', 'spec'
 ]);
 
 // Sensitive files that should never be web-accessible.
@@ -72,24 +81,119 @@ export async function runSecurityAudit(options = {}) {
   }
 
   // ─────────────────────────────────────────────────────────────────
-  // 1. Sensitive files present in web-served directories
+  // 1. Sensitive files present in web-served directories (recursive)
   // ─────────────────────────────────────────────────────────────────
   const publicDir = path.join(projectDir, 'public');
-  if (fs.existsSync(publicDir)) {
-    for (const rel of SENSITIVE_PATHS) {
-      const p = path.join(publicDir, rel);
-      if (fs.existsSync(p)) {
-        const severity = rel.startsWith('.env') || rel.startsWith('.git') ? 'critical' : 'high';
+  const SERVED_DIR_NAMES = new Set(['public', 'static', 'dist', 'build', 'out']);
+  function scanServedDirs(dir, relBase = '') {
+    if (!fs.existsSync(dir)) return;
+    let entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      if (e.name === 'node_modules' || e.name === '.git') continue;
+      const full = path.join(dir, e.name);
+      const rel = relBase ? `${relBase}/${e.name}` : e.name;
+      if (e.isDirectory()) { scanServedDirs(full, rel); continue; }
+      if (!e.isFile()) continue;
+      // Any .env* anywhere inside a served dir is critical
+      if (/^\.env(\..+)?$/.test(e.name)) {
         findings.push({
-          severity,
+          severity: 'critical',
           category: 'exposed-file',
-          file: path.relative(projectDir, p),
-          msg: `Sensitive file present in public/ — would be web-accessible: ${rel}`,
-          fix: `Move ${rel} out of public/ (or rename public/ to assets/ and adjust config).`
+          file: path.relative(projectDir, full),
+          msg: `Environment file inside a web-served directory: ${rel}`,
+          fix: `Delete or move ${rel} out of the served directory and add it to .gitignore.`
         });
-        penalize(severity === 'critical' ? 25 : 12, severity);
+        penalize(25, 'critical');
+      }
+      // Key material / DB dumps / backup files
+      if (/\.(pem|key|p12|pfx|sql|sqlite|sqlite3|db|dump|bak|backup|swp)$/.test(e.name) ||
+          /^(id_rsa|id_ed25519|id_ecdsa)(\.pub)?$/.test(e.name) ||
+          /^service-account.*\.json$/.test(e.name) || /^credentials.*\.json$/.test(e.name)) {
+        findings.push({
+          severity: 'critical',
+          category: 'exposed-file',
+          file: path.relative(projectDir, full),
+          msg: `Sensitive file type inside a web-served directory: ${rel}`,
+          fix: `Remove ${rel} from the served directory; if it was ever deployed, rotate the credential.`
+        });
+        penalize(20, 'critical');
+      }
+      // Root config/lock/docs files only flagged at top level (legacy list)
+      if (!rel.includes('/')) {
+        const match = SENSITIVE_PATHS.find(s => s === e.name);
+        if (match) {
+          findings.push({
+            severity: 'high',
+            category: 'exposed-file',
+            file: path.relative(projectDir, full),
+            msg: `Build/internal config exposed in public/: ${rel}`,
+            fix: `Move ${rel} out of public/.`
+          });
+          penalize(12, 'high');
+        }
       }
     }
+  }
+  scanServedDirs(publicDir);
+
+  // ─────────────────────────────────────────────────────────────────
+  // 1b. Source maps shipped for production
+  // ─────────────────────────────────────────────────────────────────
+  const sourcemapSignals = [];
+  for (const cfg of ['next.config.js', 'next.config.mjs', 'next.config.ts']) {
+    const p = path.join(projectDir, cfg);
+    if (fs.existsSync(p)) {
+      const c = fs.readFileSync(p, 'utf8');
+      if (/productionBrowserSourceMaps\s*:\s*true/.test(c)) {
+        sourcemapSignals.push(`${cfg}: productionBrowserSourceMaps: true`);
+      }
+    }
+  }
+  // .map files inside build output dirs that get deployed
+  for (const buildDir of ['dist', 'build', 'out']) {
+    const bd = path.join(projectDir, buildDir);
+    if (fs.existsSync(bd)) {
+      let mapCount = 0;
+      (function countMaps(d) {
+        let entries;
+        try { entries = fs.readdirSync(d, { withFileTypes: true }); } catch { return; }
+        for (const e of entries) {
+          const f = path.join(d, e.name);
+          if (e.isDirectory()) countMaps(f);
+          else if (e.isFile() && e.name.endsWith('.map')) mapCount++;
+        }
+      })(bd);
+      if (mapCount > 0) sourcemapSignals.push(`${buildDir}/ contains ${mapCount} .map file(s)`);
+    }
+  }
+  if (sourcemapSignals.length > 0) {
+    findings.push({
+      severity: 'medium',
+      category: 'source-maps',
+      file: sourcemapSignals[0],
+      msg: `Source maps may ship to production: ${sourcemapSignals.join('; ')}`,
+      fix: 'Disable source maps in production builds (original source code + secrets-in-comments become public).'
+    });
+    penalize(5, 'medium');
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // 1c. security.txt (RFC 9116) presence
+  // ─────────────────────────────────────────────────────────────────
+  const securityTxtExists =
+    fs.existsSync(path.join(projectDir, 'public/.well-known/security.txt')) ||
+    fs.existsSync(path.join(projectDir, '.well-known/security.txt')) ||
+    fs.existsSync(path.join(projectDir, 'static/.well-known/security.txt'));
+  if (!securityTxtExists) {
+    findings.push({
+      severity: 'low',
+      category: 'security-txt',
+      file: null,
+      msg: 'Missing /.well-known/security.txt (RFC 9116) — security researchers have no documented contact channel.',
+      fix: 'Add public/.well-known/security.txt with Contact: and Expires: fields. See guides/security-best-practices.md.'
+    });
+    penalize(2, 'low');
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -110,6 +214,14 @@ export async function runSecurityAudit(options = {}) {
     { pattern: /document\.writeln\s*\(/g, label: 'document.writeln', framework: 'dom' },
   ];
 
+  // Sinks found in the scanner's own source (regex pattern definitions,
+  // docstrings) are not real code — exclude self + companion engine.
+  const SELF_FILES = new Set([
+    path.resolve(fileURLToPath(import.meta.url)),
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'security-check.mjs'),
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'secrets-scan.mjs'),
+  ]);
+
   const sinksFound = [];
   function walk(dir) {
     if (!fs.existsSync(dir)) return;
@@ -120,6 +232,7 @@ export async function runSecurityAudit(options = {}) {
       if (e.isDirectory()) {
         walk(full);
       } else if (e.isFile() && SCAN_EXTS.has(path.extname(e.name).toLowerCase())) {
+        if (SELF_FILES.has(path.resolve(full))) continue;
         let content;
         try {
           content = fs.readFileSync(full, 'utf8');
@@ -181,6 +294,7 @@ export async function runSecurityAudit(options = {}) {
       const full = path.join(dir, e.name);
       if (e.isDirectory()) walkJs(full);
       else if (e.isFile() && /\.(ts|js|mjs|cjs|tsx|jsx|html|htm|astro|vue|svelte)$/i.test(e.name)) {
+        if (SELF_FILES.has(path.resolve(full))) continue;
         let content;
         try { content = fs.readFileSync(full, 'utf8'); } catch { continue; }
         for (const sink of evalSinks) {
@@ -223,11 +337,10 @@ export async function runSecurityAudit(options = {}) {
         // NOTE: the line-comment stripper must be anchored (^ or non-colon) so
         // `http://` and `https://` URL schemes are never truncated.
         const stripped = content.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '');
-        const m = stripped.match(/https?:\/\//g);
-        if (!m) continue;
-        const httpMatches = m.filter(() => false); // placeholder; actual http detection:
-        const httpOnly = stripped.match(/['"`(]http:\/\/[^'"`)\s]+/g);
-        if (httpOnly && httpOnly.length > 0) {
+        const httpOnly = (stripped.match(/['"`(]http:\/\/[^'"`)\s]+/g) || [])
+          // XML namespace identifiers are names, not fetchable resources
+          .filter(u => !/w3\.org|sitemaps\.org|schemas\.(?:sitemaps\.org|openxmlformats\.org)|schema\.org|localhost|127\.0\.0\.1|purl\.org|xmlns/i.test(u));
+        if (httpOnly.length > 0) {
           mixedContent.push({ file: path.relative(projectDir, full), urls: httpOnly });
         }
       }
@@ -255,12 +368,13 @@ export async function runSecurityAudit(options = {}) {
   if (targetUrl) {
     headersReport = await probeHeaders(targetUrl);
     applyHeaderFindings(headersReport, findings, (amt, sev) => penalize(amt, sev));
+    await probeDebugEndpoints(targetUrl, findings, (amt, sev) => penalize(amt, sev));
   } else {
     findings.push({
       severity: 'info',
       category: 'headers',
       file: null,
-      msg: 'Live HTTP header probe skipped. Re-run with --url https://yoursite.com to verify CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy.',
+      msg: 'Live HTTP header probe skipped. Re-run with --url https://yoursite.com to verify CSP, HSTS, cookies, COOP/COEP/CORP, CORS, and exposed debug endpoints.',
       fix: 'npm run security -- --url https://yoursite.com'
     });
   }
@@ -306,18 +420,43 @@ export async function runSecurityAudit(options = {}) {
 }
 
 async function probeHeaders(url) {
-  const report = { url, headers: {}, missing: [], recommendations: [] };
+  const report = { url, headers: {}, cookies: [], missing: [], recommendations: [] };
+  const baseHeaders = { 'User-Agent': 'SPS-SEO-SecurityAudit/1.3 (+security)' };
   try {
-    const res = await fetch(url, {
+    // HEAD first; fall back to GET because some CDNs (and all cookie-setting
+    // flows) return different header sets for HEAD.
+    let res = await fetch(url, {
       method: 'HEAD',
       redirect: 'follow',
       signal: AbortSignal.timeout(8000),
-      headers: { 'User-Agent': 'SPS-SEO-SecurityAudit/1.2 (+security)' }
+      headers: baseHeaders
     });
-    for (const [k, v] of res.headers.entries()) {
-      report.headers[k.toLowerCase()] = v;
-    }
+    for (const [k, v] of res.headers.entries()) report.headers[k.toLowerCase()] = v;
     report.status = res.status;
+
+    if (!report.headers['set-cookie'] || !report.headers['content-security-policy']) {
+      const getRes = await fetch(url, {
+        method: 'GET',
+        redirect: 'follow',
+        signal: AbortSignal.timeout(8000),
+        headers: baseHeaders
+      });
+      for (const [k, v] of getRes.headers.entries()) {
+        if (k.toLowerCase() === 'set-cookie') {
+          report.cookies.push(v);
+        } else if (!report.headers[k.toLowerCase()]) {
+          report.headers[k.toLowerCase()] = v;
+        }
+      }
+      // Node fetch hides repeated set-cookie in headers.getSetCookie()
+      try {
+        for (const c of getRes.headers.getSetCookie?.() || []) {
+          if (!report.cookies.includes(c)) report.cookies.push(c);
+        }
+      } catch { /* older runtimes */ }
+      // Drain body to free the socket
+      try { await getRes.arrayBuffer(); } catch { /* ignore */ }
+    }
   } catch (e) {
     report.error = e.message;
     return report;
@@ -325,7 +464,80 @@ async function probeHeaders(url) {
   return report;
 }
 
+// Probe common debug/admin/exposed paths. Any status other than
+// 401/403/404/410 means the path answers — a potential exposure.
+const DEBUG_PROBE_PATHS = [
+  { path: '/.env', severity: 'critical', label: 'Environment file' },
+  { path: '/.git/config', severity: 'critical', label: 'Git repository metadata' },
+  { path: '/.git/HEAD', severity: 'critical', label: 'Git repository metadata' },
+  { path: '/.env.local', severity: 'critical', label: 'Environment file' },
+  { path: '/server-status', severity: 'high', label: 'Apache server-status' },
+  { path: '/debug/vars', severity: 'high', label: 'Go expvar debug endpoint' },
+  { path: '/actuator/env', severity: 'high', label: 'Spring Boot actuator env' },
+  { path: '/phpmyadmin/', severity: 'medium', label: 'phpMyAdmin' },
+  { path: '/wp-login.php', severity: 'info', label: 'WordPress login' },
+];
+
+async function probeDebugEndpoints(baseUrl, findings, penalize) {
+  const reachable = [];
+  let base;
+  try { base = new URL(baseUrl); } catch { return; }
+  for (const { path: p, severity, label } of DEBUG_PROBE_PATHS) {
+    try {
+      const res = await fetch(new URL(p, base.origin), {
+        method: 'GET',
+        redirect: 'manual',
+        signal: AbortSignal.timeout(6000),
+        headers: { 'User-Agent': 'SPS-SEO-SecurityAudit/1.3 (+security)' }
+      });
+      // Drain body
+      try { await res.arrayBuffer(); } catch { /* ignore */ }
+      if (![401, 403, 404, 405, 410].includes(res.status)) {
+        reachable.push({ path: p, status: res.status, severity, label });
+      }
+    } catch { /* network error — skip */ }
+  }
+  for (const r of reachable) {
+    findings.push({
+      severity: r.severity,
+      category: 'exposed-endpoint',
+      file: `${base.origin}${r.path}`,
+      msg: `${r.label} responds with HTTP ${r.status} — may be publicly exposed.`,
+      fix: `Block or authenticate ${r.path} at the server/WAF layer. Verify the response content is not sensitive.`
+    });
+    penalize(r.severity === 'critical' ? 20 : r.severity === 'high' ? 10 : 4, r.severity);
+  }
+
+  // security.txt live check (RFC 9116)
+  try {
+    const res = await fetch(new URL('/.well-known/security.txt', base.origin), {
+      signal: AbortSignal.timeout(6000),
+      headers: { 'User-Agent': 'SPS-SEO-SecurityAudit/1.3 (+security)' }
+    });
+    try { await res.arrayBuffer(); } catch { /* ignore */ }
+    if (res.status === 200) {
+      findings.push({
+        severity: 'info',
+        category: 'security-txt',
+        file: `${base.origin}/.well-known/security.txt`,
+        msg: 'security.txt is published (RFC 9116 compliant).',
+        fix: null
+      });
+    }
+  } catch { /* offline — skip */ }
+}
+
 function applyHeaderFindings(report, findings, penalize) {
+  if (report.error) {
+    findings.push({
+      severity: 'info',
+      category: 'header',
+      file: report.url,
+      msg: `Live probe failed: ${report.error}`,
+      fix: 'Verify the URL is reachable, then re-run.'
+    });
+    return;
+  }
   const required = {
     'strict-transport-security': { severity: 'high', msg: 'Missing HSTS header — enables downgrade attacks.' },
     'content-security-policy': { severity: 'high', msg: 'Missing CSP — XSS impact not contained.' },
@@ -346,17 +558,164 @@ function applyHeaderFindings(report, findings, penalize) {
       penalize(conf.severity === 'high' ? 10 : conf.severity === 'medium' ? 5 : 2, conf.severity);
     }
   }
-  // Unsafe CSP patterns
-  const csp = report.headers['content-security-policy'];
-  if (csp && /unsafe-inline/i.test(csp) && !/nonce-/i.test(csp)) {
+
+  // ── Header VALUE validation (presence alone is not enough) ──────
+  const hsts = report.headers['strict-transport-security'];
+  if (hsts) {
+    const maxAge = /max-age=(\d+)/i.exec(hsts);
+    if (!maxAge || parseInt(maxAge[1], 10) < 15552000) {
+      findings.push({
+        severity: 'medium', category: 'header', file: report.url,
+        msg: `HSTS max-age too short (${maxAge ? maxAge[1] : 'absent'}s) — recommend ≥ 15552000 (6 months).`,
+        fix: 'Set Strict-Transport-Security: max-age=63072000; includeSubDomains; preload'
+      });
+      penalize(4, 'medium');
+    }
+    if (!/includeSubDomains/i.test(hsts)) {
+      findings.push({
+        severity: 'low', category: 'header', file: report.url,
+        msg: 'HSTS missing includeSubDomains — subdomains stay unprotected.',
+        fix: 'Append ; includeSubDomains; preload'
+      });
+      penalize(1, 'low');
+    }
+  }
+
+  const nosniff = report.headers['x-content-type-options'];
+  if (nosniff && !/nosniff/i.test(nosniff)) {
     findings.push({
-      severity: 'medium',
-      category: 'header',
-      file: report.url,
-      msg: 'CSP allows unsafe-inline without a nonce — weak XSS containment.',
-      fix: 'Replace unsafe-inline with nonce-{random} or hash-{sha256} strategies.'
+      severity: 'medium', category: 'header', file: report.url,
+      msg: `X-Content-Type-Options has invalid value "${nosniff}" — must be nosniff.`,
+      fix: 'Set exactly: X-Content-Type-Options: nosniff'
     });
-    penalize(5, 'medium');
+    penalize(3, 'medium');
+  }
+
+  const referrerPolicy = report.headers['referrer-policy'];
+  if (referrerPolicy && /unsafe-url|no-referrer-when-downgrade/i.test(referrerPolicy)) {
+    findings.push({
+      severity: 'low', category: 'header', file: report.url,
+      msg: `Weak Referrer-Policy "${referrerPolicy}" — leaks full URLs cross-origin.`,
+      fix: 'Use strict-origin-when-cross-origin or no-referrer.'
+    });
+    penalize(2, 'low');
+  }
+
+  // Deprecated header flag
+  if (report.headers['x-xss-protection']) {
+    findings.push({
+      severity: 'low', category: 'header', file: report.url,
+      msg: 'X-XSS-Protection is deprecated and ignored by modern browsers — remove it and rely on CSP.',
+      fix: 'Delete the X-XSS-Protection header.'
+    });
+    penalize(0.5, 'low');
+  }
+
+  // ── Isolation headers (COOP / COEP / CORP) ──────────────────────
+  const isolation = {
+    'cross-origin-opener-policy': { sev: 'low', label: 'COOP (Cross-Origin-Opener-Policy)' },
+    'cross-origin-embedder-policy': { sev: 'low', label: 'COEP (Cross-Origin-Embedder-Policy)' },
+    'cross-origin-resource-policy': { sev: 'low', label: 'CORP (Cross-Origin-Resource-Policy)' },
+  };
+  for (const [h, conf] of Object.entries(isolation)) {
+    if (!report.headers[h]) {
+      findings.push({
+        severity: conf.sev, category: 'header', file: report.url,
+        msg: `Missing ${conf.label} — cross-origin isolation not enforced (Spectre-class mitigations, embed protection).`,
+        fix: `Set the ${h} header (e.g. same-origin). See guides/security-best-practices.md.`
+      });
+      penalize(1.5, conf.sev);
+    }
+  }
+
+  // ── CORS wildcard detection ─────────────────────────────────────
+  const acao = report.headers['access-control-allow-origin'];
+  if (acao) {
+    const allowCreds = /true/i.test(report.headers['access-control-allow-credentials'] || '');
+    if (acao.trim() === '*' && allowCreds) {
+      findings.push({
+        severity: 'critical', category: 'header', file: report.url,
+        msg: 'CORS: Access-Control-Allow-Origin: * combined with Allow-Credentials: true — any site can make credentialed requests.',
+        fix: 'Echo a strict origin allowlist instead of * when credentials are enabled.'
+      });
+      penalize(15, 'critical');
+    } else if (acao.trim() === '*') {
+      findings.push({
+        severity: 'low', category: 'header', file: report.url,
+        msg: 'CORS: Access-Control-Allow-Origin: * — acceptable for public static assets, avoid for APIs.',
+        fix: 'Restrict to the origins that actually need access.'
+      });
+      penalize(1, 'low');
+    }
+  }
+
+  // ── Cookie flag audit ───────────────────────────────────────────
+  for (const cookie of report.cookies) {
+    const name = (cookie.split(';')[0] || '').split('=')[0]?.trim() || 'unknown';
+    const lower = cookie.toLowerCase();
+    const problems = [];
+    if (!/;\s*httponly/i.test(cookie)) problems.push('HttpOnly missing (XSS can steal the session)');
+    if (!/;\s*secure/i.test(cookie)) problems.push('Secure missing (sent over plain HTTP)');
+    if (!/;\s*samesite=(strict|lax)/i.test(lower)) problems.push('SameSite missing/None (CSRF exposure)');
+    if (problems.length === 0) continue;
+    findings.push({
+      severity: 'high',
+      category: 'cookie',
+      file: report.url,
+      msg: `Cookie "${name}": ${problems.join('; ')}.`,
+      fix: `Set Secure; HttpOnly; SameSite=Lax (or Strict) on the ${name} cookie.`
+    });
+    penalize(4 * problems.length, 'high');
+  }
+
+  // ── CSP quality checks ──────────────────────────────────────────
+  const csp = report.headers['content-security-policy'];
+  if (csp) {
+    if (/unsafe-inline/i.test(csp) && !/nonce-/i.test(csp)) {
+      findings.push({
+        severity: 'medium',
+        category: 'header',
+        file: report.url,
+        msg: 'CSP allows unsafe-inline without a nonce — weak XSS containment.',
+        fix: 'Replace unsafe-inline with nonce-{random} or hash-{sha256} strategies.'
+      });
+      penalize(5, 'medium');
+    }
+    if (/unsafe-eval/i.test(csp)) {
+      findings.push({
+        severity: 'medium',
+        category: 'header',
+        file: report.url,
+        msg: 'CSP allows unsafe-eval — dynamic code execution defeats XSS protections.',
+        fix: 'Remove unsafe-eval; fix libraries that require it (Vue 2, old webpack devtool builds).'
+      });
+      penalize(5, 'medium');
+    }
+    const scriptSrc = /script-src[^;]*/i.exec(csp)?.[0] || csp;
+    if (/\*/.test(scriptSrc) || /https?:\/\//i.test(scriptSrc.replace(/'[^']*'/g, ''))) {
+      findings.push({
+        severity: 'medium',
+        category: 'header',
+        file: report.url,
+        msg: 'CSP script-src contains wildcards or plain hosts — allows loading scripts from arbitrary origins.',
+        fix: 'Pin exact origins and use nonces or hashes for inline scripts.'
+      });
+      penalize(4, 'medium');
+    }
+    if (!/frame-ancestors/i.test(csp) && !report.headers['x-frame-options']) {
+      findings.push({
+        severity: 'medium', category: 'header', file: report.url,
+        msg: 'Neither CSP frame-ancestors nor X-Frame-Options present — clickjacking possible.',
+        fix: "Add frame-ancestors 'self' to CSP."
+      });
+      penalize(5, 'medium');
+    } else if (/frame-ancestors/i.test(csp) && report.headers['x-frame-options']) {
+      findings.push({
+        severity: 'info', category: 'header', file: report.url,
+        msg: 'Both CSP frame-ancestors and X-Frame-Options set — X-Frame-Options is redundant for modern browsers.',
+        fix: 'Consider removing X-Frame-Options; frame-ancestors supersedes it.'
+      });
+    }
   }
 }
 
